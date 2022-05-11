@@ -1,16 +1,16 @@
-# This is a sample Python script.
+import selenium.webdriver.chromium.webdriver
 
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+from DriverKit import SDKit
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press ⌘F8 to toggle the breakpoint.
+def getESPNPlyrUniverse(url: str):
+    sdrvr = SDKit(headless=False).driver
+    sdrvr.get(url)
 
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    print_hi('PyCharm')
+    getESPNPlyrUniverse(url="https://www.espn.com/fantasy/baseball/story/_/id/33208450/fantasy-baseball-rankings-head"
+                            "-head-category-rotiserrie-leagues-2022")
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
