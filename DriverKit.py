@@ -5,36 +5,29 @@
 # Houses the generics for Selenium WebDriver for multiple uses
 
 from selenium import webdriver
+from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.common import exceptions
 from selenium.webdriver.common.by import By
 import os
-import glob
-import time
-import pandas as pd
 from enum import Enum
 
 
-class SDKit(webdriver):
-    """
-    SeleniumDriverKit should be instantiated by SDKit(dirDownload).driver
-    """
+@staticmethod
+def driver_config(dirDownload: os.path, headless=True) -> webdriver:
+    options = webdriver.ChromeOptions()
+    prefs = {"download.default_directory": dirDownload}
+    # example: prefs = {"download.default_directory" : "C:\Tutorial\down"};
+    options.add_experimental_option("prefs", prefs)
+    options.headless = headless
+    # Set the load strategy so that it does not wait for adds to load
+    caps = DesiredCapabilities.CHROME
+    caps["pageLoadStrategy"] = "none"
+    driver = webdriver.Chrome(options=options, desired_capabilities=caps)
+    return driver
 
-    def __int__(self, dirDownload: str = "/Users/Shared/Baseball HQ", headless: bool = True):
-        options = webdriver.ChromeOptions()
-        prefs = {"download.default_directory": dir_builder(dirDownload)}
-        # example: prefs = {"download.default_directory" : "C:\Tutorial\down"};
-        options.add_experimental_option("prefs", prefs)
-        options.headless = headless
-        # Set the load strategy so that it does not wait for adds to load
-        caps = DesiredCapabilities.CHROME
-        caps["pageLoadStrategy"] = "none"
-        self.driver = webdriver.Chrome(options=options, desired_capabilities=caps)
 
-    def get(self, url: str, wait: int = 5):
-        self.driver.get(url)
-        self.driver.implicitly_wait(wait)
-
+@staticmethod
 def dir_builder(dirDownload: str = "root") -> os.path:
     """
     :param dirDownload: String representation of the desired directory to
@@ -62,3 +55,16 @@ def dir_builder(dirDownload: str = "root") -> os.path:
         raise NotADirectoryError()
 
     return outputPath
+
+
+class Projections(Enum):
+    # important to note Steamer_RoS is the only RoS projections with QS numbers
+    DC_RoS = "rfangraphsdc"
+    Steamer_RoS = "steamerr"
+    ZiPS_RoS = "rzips"
+    ATC = "atc"
+
+
+class StatGrp(Enum):
+    HIT = 'bat'
+    PIT = 'pit'
