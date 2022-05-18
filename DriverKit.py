@@ -10,7 +10,7 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.common import exceptions
 from selenium.webdriver.common.by import By
 import os
-from enum import Enum
+from Globals import Projections, StatGrp
 
 
 @staticmethod
@@ -56,15 +56,21 @@ def dir_builder(dirDownload: str = "root") -> os.path:
 
     return outputPath
 
+@staticmethod
+def url_builder(projections: [Projections], pos: [StatGrp] = [StatGrp.HIT, StatGrp.PIT]) -> [{str: str}]:
+    """
+    :param projections: A list of Projections enums representing the desired FanGraphs projection options
+    :param pos: A list of position groups. Either hitters, pitchers, or both.  Defaults to both
+    :return: A list of dictionary items.  The list represents the URL objects and the dict is keyed by the URL id which
+    is used to save the file with the proper naming convention and keyed by the fgURL which is the URL link.
+    Builds URLs based on user need.
+    """
+    urls = []
+    for grp in pos:
+        for proj in projections:
+            fgURL = "https://www.fangraphs.com/projections.aspx?pos=all&stats=" + grp.value + "&type=" + \
+                    proj.value + "&team=0&lg=all&players=0"
+            fg = {"id": proj.value + "_" + grp.value, "fgURL": fgURL}
+            urls.append(fg)
 
-class Projections(Enum):
-    # important to note Steamer_RoS is the only RoS projections with QS numbers
-    DC_RoS = "rfangraphsdc"
-    Steamer_RoS = "steamerr"
-    ZiPS_RoS = "rzips"
-    ATC = "atc"
-
-
-class StatGrp(Enum):
-    HIT = 'bat'
-    PIT = 'pit'
+    return urls
