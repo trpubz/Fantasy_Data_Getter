@@ -11,20 +11,24 @@ from Globals import *
 
 
 def getESPNPlyrUniverse(url: str):
-    sdrvr = DriverKit.driver_config(dirDownload=dirHQ, headless=False)
+    sdrvr = DriverKit.driverConfig(dirDownload=dirHQ, headless=False)
     sdrvr.get(url)
     sdrvr.implicitly_wait(10)
     elmArticle = sdrvr.find_element(By.CSS_SELECTOR, 'div.article-body')
     rawHTML = elmArticle.get_attribute("innerHTML")
     sdrvr.close()
-    SaveKit.write_out(dir=dirHQ, fileName='h2hPlayerList', ext=".html", content=rawHTML)
+    SaveKit.writeOut(dir=dirHQ, fileName='h2hPlayerList', ext=".html", content=rawHTML)
 
 
-def getFangraphsProjections(projSys="steamerr"):
-    dirFG = dirHQ + "regseason/"
-    urls: list[dict] = DriverKit.url_builder(projSys)
+def getFangraphsProjections(projSys=Projections.Steamer_RoS):
+    # ATC will only be used for preseason projections and thus placed in the appropriate directory
+    if projSys == Projections.ATC:
+        dirFG = dirHQ + "preseason/"
+    else:
+        dirFG = dirHQ + "regseason/"
+    urls: list[dict] = DriverKit.fgLinkBuilder(projSys)
     for url in urls:
-        sdrvr = DriverKit.driver_config(dirDownload=dirFG, headless=False)
+        sdrvr = DriverKit.driverConfig(dirDownload=dirFG, headless=False)
         sdrvr.get(url["fgURL"])
         try:
             # hard sleep
@@ -36,6 +40,7 @@ def getFangraphsProjections(projSys="steamerr"):
             time.sleep(2)
         except exceptions as e:
             print(e.message)
+        sdrvr.close()
 
         # get all the .csv files in the download directory
         files = glob.glob(dirFG + "/*.csv")
@@ -50,8 +55,7 @@ def getFangraphsProjections(projSys="steamerr"):
                 newDownloadPath = dirFG + newFileName + ".csv"
                 os.rename(f, newDownloadPath)
                 # locCSVs.append(newDownloadPath)
-                print(fr"successfully downloaded {newFileName} to {dirFG}")
-                sdrvr.close()
+                print(f"successfully downloaded {newFileName} to {dirFG}")
                 break
 
 

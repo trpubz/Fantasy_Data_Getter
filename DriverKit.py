@@ -14,7 +14,7 @@ from Globals import Projections, StatGrp
 
 
 @staticmethod
-def driver_config(dirDownload: os.path, headless=True) -> webdriver:
+def driverConfig(dirDownload: os.path, headless=True) -> webdriver:
     options = webdriver.ChromeOptions()
     prefs = {"download.default_directory": dirDownload}
     # example: prefs = {"download.default_directory" : "C:\Tutorial\down"};
@@ -28,7 +28,7 @@ def driver_config(dirDownload: os.path, headless=True) -> webdriver:
 
 
 @staticmethod
-def dir_builder(dirDownload: str = "root") -> os.path:
+def dirBuilder(dirDownload: str = "root") -> os.path:
     """
     :param dirDownload: String representation of the desired directory to
     download.  If nothing passed, defaults to the project's root directory.
@@ -57,7 +57,27 @@ def dir_builder(dirDownload: str = "root") -> os.path:
     return outputPath
 
 @staticmethod
-def url_builder(projections: [Projections], pos: [StatGrp] = [StatGrp.HIT, StatGrp.PIT]) -> [{str: str}]:
+def fgLinkBuilder(projections: [Projections], pos: [StatGrp] = [StatGrp.HIT, StatGrp.PIT]) -> [{str: str}]:
+    """
+    :param projections: A list of Projections enums representing the desired FanGraphs projection options
+    :param pos: A list of position groups. Either hitters, pitchers, or both.  Defaults to both
+    :return: A list of dictionary items.  The list represents the URL objects and the dict is keyed by the URL id which
+    is used to save the file with the proper naming convention and keyed by the fgURL which is the URL link.
+    Builds URLs based on user need.
+    """
+    urls = []
+    for grp in pos:
+        for proj in projections:
+            fgURL = "https://www.fangraphs.com/projections.aspx?pos=all&stats=" + grp.value + "&type=" + \
+                    proj.value + "&team=0&lg=all&players=0"
+            fg = {"id": proj.value + "_" + grp.value, "fgURL": fgURL}
+            urls.append(fg)
+
+    return urls
+
+# TODO: work on baseball savant link builder
+@staticmethod
+def svntLinkBuilder(projections: [Projections], pos: [StatGrp] = [StatGrp.HIT, StatGrp.PIT]) -> [{str: str}]:
     """
     :param projections: A list of Projections enums representing the desired FanGraphs projection options
     :param pos: A list of position groups. Either hitters, pitchers, or both.  Defaults to both
