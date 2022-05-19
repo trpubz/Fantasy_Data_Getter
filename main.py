@@ -1,13 +1,17 @@
-import glob
-import os
+"""
+Automates the gathering of useful Fantasy Baseball Data
+v1.0
+18MAY2022
+by pubins.taylor
+"""
 import time
 
-import selenium.webdriver.chromium.webdriver
-from selenium.common import exceptions
-from selenium.webdriver.common.by import By
 import DriverKit
 import SaveKit
 from Globals import dirHQ, FGSystem, Savant
+
+from selenium.common import exceptions
+from selenium.webdriver.common.by import By
 
 
 def getESPNPlyrUniverse(url: str):
