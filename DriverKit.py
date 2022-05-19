@@ -3,18 +3,21 @@
 # created 10MAY22
 # v0.1
 # Houses the generics for Selenium WebDriver for multiple uses
+import os
+
+from Globals import FGSystem, FGPosGrp, Savant, SavantPosGrp, SavantDownload
 
 from selenium import webdriver
-from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-from selenium.common import exceptions
-from selenium.webdriver.common.by import By
-import os
-from Globals import Projections, StatGrp
 
 
-@staticmethod
-def driverConfig(dirDownload: os.path, headless=True) -> webdriver:
+def driverConfig(dirDownload: os.path = "root", headless=True) -> webdriver:
+    """
+    Handles redundant webdriver config management by passing the desired options as arguments.
+    :param dirDownload: type os.path (string).  The driver will download files, like a .csv, to this directory.
+    :param headless: boolean.  Indicates whether to draw the webdriver window.
+    :return: selenium.webdriver
+    """
     options = webdriver.ChromeOptions()
     prefs = {"download.default_directory": dirDownload}
     # example: prefs = {"download.default_directory" : "C:\Tutorial\down"};
@@ -27,27 +30,18 @@ def driverConfig(dirDownload: os.path, headless=True) -> webdriver:
     return driver
 
 
-@staticmethod
 def dirBuilder(dirDownload: str = "root") -> os.path:
     """
-    :param dirDownload: String representation of the desired directory to
-    download.  If nothing passed, defaults to the project's root directory.
-
-    :return: the os.path which is a string
-
     Builds a directory on the user preference.
-
-    The function also removes any previously downloaded files found in the same directory with the same naming
-    convention.
+    :param dirDownload: String representation of the desired directory to download.  If nothing passed,
+    defaults to the project's root directory.
+    :return: the os.path which is a string
     """
+
     outputPath: os.path
 
     if dirDownload == "root":
         projectRoot = os.path.dirname(__file__)
-        # files = glob.glob(projectRoot + "/csvs/*.csv")
-        # for f in files:
-        #     if f.__contains__("FanGraphs"):
-        #         os.remove(f)
         outputPath = projectRoot + '/csvs'
     elif dirDownload.startswith('C:\\') or dirDownload.startswith('/Users'):
         outputPath = dirDownload
@@ -56,41 +50,51 @@ def dirBuilder(dirDownload: str = "root") -> os.path:
 
     return outputPath
 
-@staticmethod
-def fgLinkBuilder(projections: [Projections], pos: [StatGrp] = [StatGrp.HIT, StatGrp.PIT]) -> [{str: str}]:
+
+def fgLinkBuilder(projections: [FGSystem], pos: [FGPosGrp] = (FGPosGrp.HIT, FGPosGrp.PIT)) -> [{str: str}]:
     """
+    Builds Fangraphs URLs based on user need.
     :param projections: A list of Projections enums representing the desired FanGraphs projection options
     :param pos: A list of position groups. Either hitters, pitchers, or both.  Defaults to both
     :return: A list of dictionary items.  The list represents the URL objects and the dict is keyed by the URL id which
-    is used to save the file with the proper naming convention and keyed by the fgURL which is the URL link.
-    Builds URLs based on user need.
     """
+
     urls = []
     for grp in pos:
         for proj in projections:
             fgURL = "https://www.fangraphs.com/projections.aspx?pos=all&stats=" + grp.value + "&type=" + \
                     proj.value + "&team=0&lg=all&players=0"
-            fg = {"id": proj.value + "_" + grp.value, "fgURL": fgURL}
+            fg = {"id": proj.value + "_" + grp.value, "url": fgURL}
             urls.append(fg)
 
     return urls
 
-# TODO: work on baseball savant link builder
-@staticmethod
-def svntLinkBuilder(projections: [Projections], pos: [StatGrp] = [StatGrp.HIT, StatGrp.PIT]) -> [{str: str}]:
+
+def savantLinkBuilder(statcast: [Savant], pos: [SavantPosGrp] = (SavantPosGrp.HIT, SavantPosGrp.PIT)) -> [{str: str}]:
     """
-    :param projections: A list of Projections enums representing the desired FanGraphs projection options
+    Builds baseball.savant URLs based on user need.
+    :param statcast: A list of Savant enums representing the desired baseball savant stats
     :param pos: A list of position groups. Either hitters, pitchers, or both.  Defaults to both
     :return: A list of dictionary items.  The list represents the URL objects and the dict is keyed by the URL id which
-    is used to save the file with the proper naming convention and keyed by the fgURL which is the URL link.
-    Builds URLs based on user need.
     """
+
+    minEvents: str
     urls = []
     for grp in pos:
-        for proj in projections:
-            fgURL = "https://www.fangraphs.com/projections.aspx?pos=all&stats=" + grp.value + "&type=" + \
-                    proj.value + "&team=0&lg=all&players=0"
-            fg = {"id": proj.value + "_" + grp.value, "fgURL": fgURL}
-            urls.append(fg)
+        if grp == SavantPosGrp.HIT:
+            minEvents = "q"  # stands for qualified
+        elif grp == SavantPosGrp.PIT:
+            minEvents = "1"
+        for stats in statcast:
+            url = "https://baseballsavant.mlb.com/leaderboard/" + stats.value + "?type=" + grp.value + "&min=" \
+                      + minEvents
+            if stats == Savant.xStats:
+                download = SavantDownload.xStats
+            savant = {
+                "id": stats.value + "_" + grp.value,
+                "url": url,
+                "download": download.value
+            }
+            urls.append(savant)
 
     return urls
