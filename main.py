@@ -22,7 +22,7 @@ def getESPNPlyrUniverse(url: str):
     :param url: string corresponding to the article destination.  This changes from preseason to regular season
     :return: none
     """
-    sdrvr = DriverKit.driverConfig(dirDownload=dirHQ, headless=False)
+    sdrvr = DriverKit.driverConfig(dirDownload=dirHQ, headless=True)
     sdrvr.get(url)
     sdrvr.implicitly_wait(10)
     elmArticle = sdrvr.find_element(By.CSS_SELECTOR, 'div.article-body')
@@ -45,21 +45,23 @@ def getFangraphsProjections(projSys: [FGSystem] = (FGSystem.Steamer_RoS,)):
         dirFG = dirHQ + "regseason/"
     urls: list[dict] = DriverKit.fgLinkBuilder(projSys)
     for url in urls:
-        sdrvr = DriverKit.driverConfig(dirDownload=dirFG, headless=False)
+        sdrvr = DriverKit.driverConfig(dirDownload=dirFG, headless=True)
         sdrvr.get(url["url"])
         try:
             # hard sleep
-            time.sleep(2)
+            time.sleep(4)
+            sdrvr.execute_script("window.scrollBy(0,316)")
             # Wait a reasonable time that a person would take
             sdrvr.implicitly_wait(15)
             # Wait until the element to download is available and then stop loading
             sdrvr.find_element(By.LINK_TEXT, "Export Data").click()
-            time.sleep(2)
-        except exceptions as e:
+            print("clicked 'Export Data'")
+            time.sleep(3)
+        except Exception as e:
             print(e.message)
         sdrvr.close()
-
-        SaveKit.renameFile(dir=dirFG, fExt=".csv", downloadedFile="FanGraphs", newFileName=url["id"])
+        # Every file downloaded from FanGraphs is labeled "FanGraphs Leaderboard.csv"
+        SaveKit.renameFile(dir=dirFG, fExt=".csv", downloadedFile="FanGraphs Leaderboard.csv", newFileName=url["id"])
 
 
 def getSavantData(statcastData: [Savant]):
@@ -73,7 +75,7 @@ def getSavantData(statcastData: [Savant]):
     dirSvnt = dirHQ + "regseason/"
     savantDestinations: list[dict] = DriverKit.savantLinkBuilder(statcast=statcastData)
     for dest in savantDestinations:
-        sdrvr = DriverKit.driverConfig(dirDownload=dirSvnt, headless=False)
+        sdrvr = DriverKit.driverConfig(dirDownload=dirSvnt, headless=True)
         sdrvr.get(dest["url"])
         try:
             # Wait a reasonable time that a person would take

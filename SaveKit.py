@@ -16,7 +16,6 @@ def renameFile(dir: str, fExt: str, downloadedFile: str, newFileName: str):
     # get all the .csv files in the download directory
     files = glob.glob(dir + "*" + fExt)
     for f in files:
-        # the file will always download as 'FanGraphs Leaderboard.csv'
         fName = f.rsplit("/", 1)[1]
         if fName.__eq__(downloadedFile):
             # remove old files

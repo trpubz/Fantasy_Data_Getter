@@ -91,7 +91,7 @@ def savantLinkBuilder(statcast: [Savant], pos: [SavantPosGrp] = (SavantPosGrp.HI
             if stats == Savant.xStats:
                 download = SavantDownload.xStats
             savant = {
-                "id": stats.value + "_" + grp.value,
+                "id": stats.value + "_" + grp.value[0:3],  # subscript operator to get the first 3 letters
                 "url": url,
                 "download": download.value
             }

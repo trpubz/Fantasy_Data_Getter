@@ -26,10 +26,14 @@ class Savant(Enum):
     xStats = "expected_statistics"
     barrels = "statcast"
     rolling = "rolling"
+    rankings = "percentile-rankings"
 
 
 class SavantDownload(Enum):
     xStats = "expected_stats.csv"
+    barrels = "exit_velocity.csv"
+    # rolling does not download .csv; need to webscrape
+    rankings = "percentile-rankings.csv"
 
 
 class SavantPosGrp(Enum):
