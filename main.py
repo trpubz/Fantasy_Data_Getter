@@ -45,7 +45,7 @@ def getFangraphsProjections(projSys: [FGSystem] = (FGSystem.Steamer_RoS,)):
         dirFG = dirHQ + "regseason/"
     urls: list[dict] = DriverKit.fgLinkBuilder(projSys)
     for url in urls:
-        sdrvr = DriverKit.driverConfig(dirDownload=dirFG, headless=True)
+        sdrvr = DriverKit.driverConfig(dirDownload=dirFG, headless=False)
         sdrvr.get(url["url"])
         try:
             # hard sleep
