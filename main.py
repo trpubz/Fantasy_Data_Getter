@@ -1,7 +1,7 @@
 """
 Automates the gathering of useful Fantasy Baseball Data
-v1.0
-18MAY2022
+v1.1
+19MAY2022
 by pubins.taylor
 """
 import time
