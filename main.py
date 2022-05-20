@@ -66,9 +66,9 @@ def getFangraphsProjections(projSys: [FGSystem] = (FGSystem.Steamer_RoS,)):
         # Fangraphs csvs have column separators that produce NA data columns with duplicative headers; those need to be
         # removed or will not be ingestible
         df = pandas.read_csv(dirFG + downloadedFile)
-        print(df)
+        # print(df)
         df.dropna(axis=1, how="all", inplace=True)
-        print(df)
+        # print(df)
         df.to_csv(dirFG + downloadedFile, index=False)
         SaveKit.renameFile(dir=dirFG, fExt=".csv", downloadedFile=downloadedFile, newFileName=url["id"])
 
