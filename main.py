@@ -12,6 +12,7 @@ from Globals import dirHQ, FGSystem, Savant
 
 from selenium.common import exceptions
 from selenium.webdriver.common.by import By
+import pandas
 
 
 def getESPNPlyrUniverse(url: str):
@@ -61,7 +62,15 @@ def getFangraphsProjections(projSys: [FGSystem] = (FGSystem.Steamer_RoS,)):
             print(e.message)
         sdrvr.close()
         # Every file downloaded from FanGraphs is labeled "FanGraphs Leaderboard.csv"
-        SaveKit.renameFile(dir=dirFG, fExt=".csv", downloadedFile="FanGraphs Leaderboard.csv", newFileName=url["id"])
+        downloadedFile = "FanGraphs Leaderboard.csv"
+        # Fangraphs csvs have column separators that produce NA data columns with duplicative headers; those need to be
+        # removed or will not be ingestible
+        df = pandas.read_csv(dirFG + downloadedFile)
+        print(df)
+        df.dropna(axis=1, how="all", inplace=True)
+        print(df)
+        df.to_csv(dirFG + downloadedFile, index=False)
+        SaveKit.renameFile(dir=dirFG, fExt=".csv", downloadedFile=downloadedFile, newFileName=url["id"])
 
 
 def getSavantData(statcastData: [Savant]):
@@ -95,9 +104,9 @@ def getSavantData(statcastData: [Savant]):
 
 
 if __name__ == '__main__':
-    getESPNPlyrUniverse(url="https://www.espn.com/fantasy/baseball/story/_/id/33208450/fantasy-baseball-rankings-head"
-                            "-head-category-rotiserrie-leagues-2022")
+    # getESPNPlyrUniverse(url="https://www.espn.com/fantasy/baseball/story/_/id/33208450/fantasy-baseball-rankings-head"
+    #                         "-head-category-rotiserrie-leagues-2022")
     getFangraphsProjections(projSys=[FGSystem.Steamer_RoS])
-    getSavantData(statcastData=[Savant.xStats])
+    # getSavantData(statcastData=[Savant.xStats])
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
