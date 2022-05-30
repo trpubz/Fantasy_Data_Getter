@@ -1,5 +1,6 @@
 """
-Automates the gathering of useful Fantasy Baseball Data
+Automates the gathering of useful Fantasy Baseball Data.  To include the ESPN Fantasy Universe, the Fangraphs
+Projections, & the Baseball Savant expected stats.
 v1.1
 19MAY2022
 by pubins.taylor
