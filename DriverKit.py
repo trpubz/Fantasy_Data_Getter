@@ -82,7 +82,7 @@ def savantLinkBuilder(statcast: [Savant], pos: [SavantPosGrp] = (SavantPosGrp.HI
     urls = []
     for grp in pos:
         if grp == SavantPosGrp.HIT:
-            minEvents = "q"  # stands for qualified
+            minEvents = "25"  # stands for qualified
         elif grp == SavantPosGrp.PIT:
             minEvents = "1"
         for stats in statcast:
