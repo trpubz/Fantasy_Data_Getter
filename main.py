@@ -7,12 +7,13 @@ by pubins.taylor
 """
 import time
 
-import DriverKit
+from DriverKit import *
 import SaveKit
 from Globals import dirHQ, FGSystem, Savant
 
 from selenium.common import exceptions
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
 import pandas
 
 
@@ -24,7 +25,7 @@ def getESPNPlyrUniverse(url: str):
     :param url: string corresponding to the article destination.  This changes from preseason to regular season
     :return: none
     """
-    sdrvr = DriverKit.driverConfig(dirDownload=dirHQ, headless=True)
+    sdrvr = DKDriverConfig(dirDownload=dirHQ, headless=True)
     sdrvr.get(url)
     sdrvr.implicitly_wait(10)
     elmArticle = sdrvr.find_element(By.CSS_SELECTOR, 'div.article-body')
@@ -45,9 +46,9 @@ def getFangraphsProjections(projSys: [FGSystem] = (FGSystem.Steamer_RoS,)):
         dirFG = dirHQ + "preseason/"
     else:
         dirFG = dirHQ + "regseason/"
-    urls: list[dict] = DriverKit.fgLinkBuilder(projSys)
+    urls: list[dict] = DKFGLinkBuilder(projSys)
     for url in urls:
-        sdrvr = DriverKit.driverConfig(dirDownload=dirFG, headless=False)
+        sdrvr = DKDriverConfig(dirDownload=dirFG, headless=False)
         sdrvr.get(url["url"])
         try:
             # hard sleep
@@ -58,7 +59,13 @@ def getFangraphsProjections(projSys: [FGSystem] = (FGSystem.Steamer_RoS,)):
             # Wait until the element to download is available and then stop loading
             sdrvr.find_element(By.LINK_TEXT, "Export Data").click()
             print("clicked 'Export Data'")
-            time.sleep(3)
+            time.sleep(5)
+            # downloadWait = True
+            # while downloadWait:
+            #     for fname in os.listdir(dirFG):
+            #         if fname.endswith('.crdownload'):
+            #             downloadWait = True
+            #         else: downloadWait = False
         except Exception as e:
             print(e.message)
         sdrvr.close()
@@ -83,9 +90,9 @@ def getSavantData(statcastData: [Savant]):
     """
 
     dirSvnt = dirHQ + "regseason/"
-    savantDestinations: list[dict] = DriverKit.savantLinkBuilder(statcast=statcastData)
+    savantDestinations: list[dict] = DKSavantLinkBuilder(statcast=statcastData)
     for dest in savantDestinations:
-        sdrvr = DriverKit.driverConfig(dirDownload=dirSvnt, headless=True)
+        sdrvr = DKDriverConfig(dirDownload=dirSvnt, headless=True)
         sdrvr.get(dest["url"])
         try:
             # Wait a reasonable time that a person would take

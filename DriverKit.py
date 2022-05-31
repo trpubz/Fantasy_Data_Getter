@@ -11,7 +11,7 @@ from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 
-def driverConfig(dirDownload: os.path = "root", headless=True) -> webdriver:
+def DKDriverConfig(dirDownload: os.path = "root", headless=True) -> webdriver:
     """
     Handles redundant webdriver config management by passing the desired options as arguments.
     :param dirDownload: type os.path (string).  The driver will download files, like a .csv, to this directory.
@@ -30,7 +30,7 @@ def driverConfig(dirDownload: os.path = "root", headless=True) -> webdriver:
     return driver
 
 
-def dirBuilder(dirDownload: str = "root") -> os.path:
+def DKDirBuilder(dirDownload: str = "root") -> os.path:
     """
     Builds a directory on the user preference.
     :param dirDownload: String representation of the desired directory to download.  If nothing passed,
@@ -51,7 +51,7 @@ def dirBuilder(dirDownload: str = "root") -> os.path:
     return outputPath
 
 
-def fgLinkBuilder(projections: [FGSystem], pos: [FGPosGrp] = (FGPosGrp.HIT, FGPosGrp.PIT)) -> [{str: str}]:
+def DKFGLinkBuilder(projections: [FGSystem], pos: [FGPosGrp] = (FGPosGrp.HIT, FGPosGrp.PIT)) -> [{str: str}]:
     """
     Builds Fangraphs URLs based on user need.
     :param projections: A list of Projections enums representing the desired FanGraphs projection options
@@ -70,7 +70,7 @@ def fgLinkBuilder(projections: [FGSystem], pos: [FGPosGrp] = (FGPosGrp.HIT, FGPo
     return urls
 
 
-def savantLinkBuilder(statcast: [Savant], pos: [SavantPosGrp] = (SavantPosGrp.HIT, SavantPosGrp.PIT)) -> [{str: str}]:
+def DKSavantLinkBuilder(statcast: [Savant], pos: [SavantPosGrp] = (SavantPosGrp.HIT, SavantPosGrp.PIT)) -> [{str: str}]:
     """
     Builds baseball.savant URLs based on user need.
     :param statcast: A list of Savant enums representing the desired baseball savant stats
@@ -98,3 +98,14 @@ def savantLinkBuilder(statcast: [Savant], pos: [SavantPosGrp] = (SavantPosGrp.HI
             urls.append(savant)
 
     return urls
+
+
+def DKCheckDownloadsChrome(driver):
+    if not driver.current_url.startswith("chrome://downloads"):
+        driver.get("chrome://downloads/")
+    return driver.execute_script("""
+        var items = document.querySelector('downloads-manager')
+            .shadowRoot.getElementById('downloadsList').items;
+        if (items.every(e => e.state === "COMPLETE"))
+            return items.map(e => e.fileUrl || e.file_url);
+        """)
