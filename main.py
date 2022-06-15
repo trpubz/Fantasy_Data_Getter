@@ -34,10 +34,12 @@ def getESPNPlyrUniverse(url: str):
     SaveKit.writeOut(dir=dirHQ, fileName='h2hPlayerList', ext=".html", content=rawHTML)
 
 
-def getFangraphsProjections(projSys: [FGSystem] = (FGSystem.Steamer_RoS,)):
+def getFangraphsProjections(projSys: [FGSystem] = (FGSystem.Steamer_RoS,), waitTime: int = 5):
     """
     Function that takes a requested projection system, builds URLs to match request, invokes Selenium to download the
     .csv, and renames the file according to the requested projection system
+    :param waitTime: This is the hard wait time for the download to finish.  Over a slow network, the default value will
+    time out too quickly and this value should increase.
     :param projSys: Projection System is an Enum that corresponds to an available projection system; reduces to a string
     :return: none
     """
@@ -59,7 +61,7 @@ def getFangraphsProjections(projSys: [FGSystem] = (FGSystem.Steamer_RoS,)):
             # Wait until the element to download is available and then stop loading
             sdrvr.find_element(By.LINK_TEXT, "Export Data").click()
             print("clicked 'Export Data'")
-            time.sleep(5)
+            time.sleep(waitTime)
             # downloadWait = True
             # while downloadWait:
             #     for fname in os.listdir(dirFG):
@@ -81,10 +83,12 @@ def getFangraphsProjections(projSys: [FGSystem] = (FGSystem.Steamer_RoS,)):
         SaveKit.renameFile(dir=dirFG, fExt=".csv", downloadedFile=downloadedFile, newFileName=url["id"])
 
 
-def getSavantData(statcastData: [Savant]):
+def getSavantData(statcastData: [Savant], waitTime: int = 10):
     """
     Receives requested baseball savant data products, builds URLs to match request, invokes Selenium to download the
     .csv, and renames the file according to the dataset
+    :param waitTime: This is the hard wait time for the download to finish.  Over a slow network, the default value will
+    time out too quickly and this value should increase.
     :param statcastData: Savant enum representing the desired statcast data object
     :return: none
     """
@@ -102,7 +106,7 @@ def getSavantData(statcastData: [Savant]):
             time.sleep(3)
             downloadBtn.click()
             print("clicked 'Download CSV'")
-            time.sleep(3)
+            time.sleep(waitTime)
         except exceptions as e:
             sdrvr.close()
             print(e.message)
@@ -112,9 +116,10 @@ def getSavantData(statcastData: [Savant]):
 
 
 if __name__ == '__main__':
-    getESPNPlyrUniverse(url="https://www.espn.com/fantasy/baseball/story/_/id/33208450/fantasy-baseball-rankings-head"
-                            "-head-category-rotiserrie-leagues-2022")
-    getFangraphsProjections(projSys=[FGSystem.Steamer_RoS])
-    getSavantData(statcastData=[Savant.xStats])
+    # getESPNPlyrUniverse(url="https://www.espn.com/fantasy/baseball/story/_/id/33208450/fantasy-baseball-rankings-head"
+    #                         "-head-category-rotiserrie-leagues-2022")
+    networkLatencyWaitTime = 10  # This value should be changes when the default times out due to slow network
+    # getFangraphsProjections(projSys=[FGSystem.Steamer_RoS], waitTime=networkLatencyWaitTime)
+    getSavantData(statcastData=[Savant.xStats], waitTime=networkLatencyWaitTime)
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
