@@ -7,7 +7,7 @@ by pubins.taylor
 """
 import time
 
-from DriverKit import *
+import DriverKit
 import SaveKit
 from Globals import dirHQ, FGSystem, Savant
 
@@ -25,7 +25,7 @@ def getESPNPlyrUniverse(url: str):
     :param url: string corresponding to the article destination.  This changes from preseason to regular season
     :return: none
     """
-    sdrvr = DKDriverConfig(dirDownload=dirHQ, headless=True)
+    sdrvr = DriverKit.DKDriverConfig(dirDownload=dirHQ, headless=True)
     sdrvr.get(url)
     sdrvr.implicitly_wait(10)
     elmArticle = sdrvr.find_element(By.CSS_SELECTOR, 'div.article-body')
@@ -48,9 +48,9 @@ def getFangraphsProjections(projSys: [FGSystem] = (FGSystem.Steamer_RoS,), waitT
         dirFG = dirHQ + "preseason/"
     else:
         dirFG = dirHQ + "regseason/"
-    urls: list[dict] = DKFGLinkBuilder(projSys)
+    urls: list[dict] = DriverKit.DKFGLinkBuilder(projSys)
     for url in urls:
-        sdrvr = DKDriverConfig(dirDownload=dirFG, headless=False)
+        sdrvr = DriverKit.DKDriverConfig(dirDownload=dirFG, headless=False)
         sdrvr.get(url["url"])
         try:
             # hard sleep
@@ -94,9 +94,9 @@ def getSavantData(statcastData: [Savant], waitTime: int = 10):
     """
 
     dirSvnt = dirHQ + "regseason/"
-    savantDestinations: list[dict] = DKSavantLinkBuilder(statcast=statcastData)
+    savantDestinations: list[dict] = DriverKit.DKSavantLinkBuilder(statcast=statcastData)
     for dest in savantDestinations:
-        sdrvr = DKDriverConfig(dirDownload=dirSvnt, headless=True)
+        sdrvr = DriverKit.DKDriverConfig(dirDownload=dirSvnt, headless=True)
         sdrvr.get(dest["url"])
         try:
             # Wait a reasonable time that a person would take
