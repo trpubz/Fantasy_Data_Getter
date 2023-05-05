@@ -7,4 +7,4 @@ retrieves all relevant Fantasy Data (ESPN Player Universe, Fangraphs Projections
 - BS [url?]
 
 ## Outputs
-- shaved down .html of ESPN's Top 300 Players for later processing by [diff app] 
+- shaved down .html of ESPN's Top 300 Players for later processing by a [diff app](https://github.com/trpubz/ESPN_FantasyPlayerList) 
