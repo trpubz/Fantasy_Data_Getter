@@ -1,5 +1,5 @@
 """
-Automates the gathering of useful Fantasy Baseball Player Data.  To include the ESPN Fantasy Universe, the Fangraphs
+Automates the gathering of useful Fantasy Baseball Player Player Data.  To include the ESPN Fantasy Universe, the Fangraphs
 Projections, & the Baseball Savant expected stats.
 v1.2
 modified: 19 MAY 2023
@@ -34,7 +34,7 @@ def getESPNPlyrUniverse(url: str):
     SaveKit.writeOut(dir=dirHQ, fileName='h2hPlayerList', ext=".html", content=rawHTML)
 
 
-def getFangraphsProjections(projSys: List[FGSystem] = (FGSystem.Steamer_RoS,), waitTime: int = 5):
+def getFangraphsProjections(projSys: list[FGSystem] = (FGSystem.Steamer_RoS,), waitTime: int = 5):
     """
     Function that takes a requested projection system, builds URLs to match request, invokes Selenium to download the
     .csv, and renames the file according to the requested projection system
@@ -83,7 +83,7 @@ def getFangraphsProjections(projSys: List[FGSystem] = (FGSystem.Steamer_RoS,), w
         SaveKit.renameFile(dir=dirFG, fExt=".csv", downloadedFile=downloadedFile, newFileName=url["id"])
 
 
-def getSavantData(statcastData: List[Savant], waitTime: int = 10):
+def getSavantData(statcastData: list[Savant], waitTime: int = 10):
     """
     Receives requested baseball savant data products, builds URLs to match request, invokes Selenium to download the
     .csv, and renames the file according to the dataset
@@ -118,8 +118,8 @@ def getSavantData(statcastData: List[Savant], waitTime: int = 10):
 if __name__ == '__main__':
     # getESPNPlyrUniverse(url="https://www.espn.com/fantasy/baseball/story/_/id/33208450/fantasy-baseball-rankings-head"
     #                         "-head-category-rotiserrie-leagues-2022")
+    
     networkLatencyWaitTime = 10  # This value should be changes when the default times out due to slow network
-    # getFangraphsProjections(projSys=[FGSystem.Steamer_RoS], waitTime=networkLatencyWaitTime)
+    getFangraphsProjections(projSys=[FGSystem.Steamer_RoS], waitTime=networkLatencyWaitTime)
     getSavantData(statcastData=[Savant.xStats], waitTime=networkLatencyWaitTime)
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
