@@ -51,7 +51,7 @@ def DKDirBuilder(dirDownload: str = "root") -> os.path:
     return outputPath
 
 
-def DKFGLinkBuilder(projections: [FGSystem], pos: [FGPosGrp] = (FGPosGrp.HIT, FGPosGrp.PIT)) -> [{str: str}]:
+def DKFGLinkBuilder(*projections: list[FGSystem], pos: list[FGPosGrp] = (FGPosGrp.HIT, FGPosGrp.PIT)) -> list[dict[str, str]]:
     """
     Builds Fangraphs URLs based on user need.
     :param projections: A list of Projections enums representing the desired FanGraphs projection options
@@ -70,7 +70,7 @@ def DKFGLinkBuilder(projections: [FGSystem], pos: [FGPosGrp] = (FGPosGrp.HIT, FG
     return urls
 
 
-def DKSavantLinkBuilder(statcast: [Savant], pos: [SavantPosGrp] = (SavantPosGrp.HIT, SavantPosGrp.PIT)) -> [{str: str}]:
+def DKSavantLinkBuilder(statcast: list[Savant], pos: list[SavantPosGrp] = (SavantPosGrp.HIT, SavantPosGrp.PIT)) -> list[dict[str: str]]:
     """
     Builds baseball.savant URLs based on user need.
     :param statcast: A list of Savant enums representing the desired baseball savant stats

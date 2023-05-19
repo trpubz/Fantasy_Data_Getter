@@ -1,8 +1,8 @@
 """
-Automates the gathering of useful Fantasy Baseball Data.  To include the ESPN Fantasy Universe, the Fangraphs
+Automates the gathering of useful Fantasy Baseball Player Data.  To include the ESPN Fantasy Universe, the Fangraphs
 Projections, & the Baseball Savant expected stats.
-v1.1
-19MAY2022
+v1.2
+modified: 19 MAY 2023
 by pubins.taylor
 """
 import time
@@ -34,7 +34,7 @@ def getESPNPlyrUniverse(url: str):
     SaveKit.writeOut(dir=dirHQ, fileName='h2hPlayerList', ext=".html", content=rawHTML)
 
 
-def getFangraphsProjections(projSys: [FGSystem] = (FGSystem.Steamer_RoS,), waitTime: int = 5):
+def getFangraphsProjections(projSys: List[FGSystem] = (FGSystem.Steamer_RoS,), waitTime: int = 5):
     """
     Function that takes a requested projection system, builds URLs to match request, invokes Selenium to download the
     .csv, and renames the file according to the requested projection system
@@ -83,7 +83,7 @@ def getFangraphsProjections(projSys: [FGSystem] = (FGSystem.Steamer_RoS,), waitT
         SaveKit.renameFile(dir=dirFG, fExt=".csv", downloadedFile=downloadedFile, newFileName=url["id"])
 
 
-def getSavantData(statcastData: [Savant], waitTime: int = 10):
+def getSavantData(statcastData: List[Savant], waitTime: int = 10):
     """
     Receives requested baseball savant data products, builds URLs to match request, invokes Selenium to download the
     .csv, and renames the file according to the dataset
