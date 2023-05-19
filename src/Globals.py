@@ -7,7 +7,7 @@
 from enum import Enum
 
 
-dirHQ = "/Users/Shared/BaseballHQ/"
+dirHQ = "/Users/Shared/BaseballHQ/resources/extract"
 
 
 class FGSystem(Enum):

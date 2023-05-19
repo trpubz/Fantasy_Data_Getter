@@ -14,8 +14,11 @@ from Globals import dirHQ, FGSystem, Savant
 from selenium.common import exceptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
+from bs4 import BeautifulSoup
 import pandas
+import lxml
 
+rawHTML: str = None
 
 def getESPNPlyrUniverse(url: str):
     """
@@ -31,7 +34,19 @@ def getESPNPlyrUniverse(url: str):
     elmArticle = sdrvr.find_element(By.CSS_SELECTOR, 'div.article-body')
     rawHTML = elmArticle.get_attribute("innerHTML")
     sdrvr.close()
-    SaveKit.writeOut(dir=dirHQ, fileName='h2hPlayerList', ext=".html", content=rawHTML)
+    SaveKit.writeOut(fileName='tempH2HPlayerList', ext=".html", content=rawHTML) # not passing a directory will default to the project root
+
+def buildPlayerUniverse():
+    """
+    Function that parses the ESPN Fantasy Universe HTML file and extracts the player names and their ESPN Player IDs.
+    This function is dependent on the ESPN Fantasy Universe HTML file being downloaded and saved to the project root.
+    :return: none
+    """
+    if rawHTML is None:
+        rawHTML = SaveKit.readIn(fileName='tempH2HPlayerList', ext=".html")
+
+    soup = BeautifulSoup(rawHTML, 'lxml')
+    
 
 
 def getFangraphsProjections(projSys: list[FGSystem] = (FGSystem.Steamer_RoS,), waitTime: int = 5):
@@ -116,10 +131,12 @@ def getSavantData(statcastData: list[Savant], waitTime: int = 10):
 
 
 if __name__ == '__main__':
-    # getESPNPlyrUniverse(url="https://www.espn.com/fantasy/baseball/story/_/id/33208450/fantasy-baseball-rankings-head"
-    #                         "-head-category-rotiserrie-leagues-2022")
+    espnPlyrUniverseURL = "https://www.espn.com/fantasy/baseball/story/_/id/35438162/fantasy-baseball-rankings-head-head-rotisserie-leagues-2023-espn-karabell"
+    getESPNPlyrUniverse(url=espnPlyrUniverseURL)
+    buildPlayerUniverse()
     
-    networkLatencyWaitTime = 10  # This value should be changes when the default times out due to slow network
-    getFangraphsProjections(projSys=[FGSystem.Steamer_RoS], waitTime=networkLatencyWaitTime)
-    getSavantData(statcastData=[Savant.xStats], waitTime=networkLatencyWaitTime)
+    # TODO: Extract Fangraph pulls and Savant pulls into separate applet 
+    # networkLatencyWaitTime = 10  # This value should be changes when the default times out due to slow network
+    # getFangraphsProjections(projSys=[FGSystem.Steamer_RoS], waitTime=networkLatencyWaitTime)
+    # getSavantData(statcastData=[Savant.xStats], waitTime=networkLatencyWaitTime)
 
