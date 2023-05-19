@@ -1,8 +1,7 @@
-# WHAT WE DOIN HERE
+# File with global variables
 # by pubins.taylor
 # v0.1
-# created DD MMM YYYY
-# lastUpdate DD MMM YYYY
+# lastUpdate 19 MAY 2023
 
 from enum import Enum
 
