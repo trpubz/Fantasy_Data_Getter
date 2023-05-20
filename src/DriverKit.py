@@ -5,7 +5,7 @@
 # Houses the generics for Selenium WebDriver for multiple uses
 import os
 
-from Globals import FGSystem, FGPosGrp, Savant, SavantPosGrp, SavantDownload
+from src.Globals import FGSystem, FGPosGrp, Savant, SavantPosGrp, SavantDownload
 
 from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
