@@ -129,6 +129,8 @@ def buildPlayerUniverse(df: pd.DataFrame):
     :param df: pandas dataframe that contains the player key map
     :return: none
     """
+    os.environ['PYDEVD_WARN_SLOW_RESOLVE_TIMEOUT'] = '1.5s'
+
     global rawHTML # global keyword allows access to the global variable
     if rawHTML == "":
         rawHTML = IOKit.readIn(fileName='tempESPNPlayerUniverse', ext=".html")
@@ -142,17 +144,16 @@ def buildPlayerUniverse(df: pd.DataFrame):
     for player in playerRows:
         # column 1 is Ovr Rnk, 2 is name & pos & team, 3 is Fantasy Team, 4 is availability, the rest are player rater stats
         playerData = player.find_all("td")
-        espnID: str = playerData[1].find(class_ = "player-headshot").find("src", re.compile("r'full/(\d+)\.png'"))
-        # if espnID is a match in the player list, then update the player's position
-        # else, create a new player and append it to the list
-        p = next((p for p in players if p.espnID == espnID), None)
-        if p is None:
-            fangraphsID = df[df["ESPNID"] == espnID]["IDFANGRAPHS"].values[0]
-            savantID = df[df["ESPNID"] == espnID]["MLBID"].values[0]
-            players.append(Player().from_data(playerData, espnID, fangraphsID, savantID, pos))
-        else:
-            # update the player's position rank
-            pass
+        idLoc: str = playerData[1].find(class_ = "player-headshot").find("img").get("src")
+        espnID = re.findall(r'full/(\d+)\.png', idLoc)[0]
+        
+        # shohei player id is 39382
+        # p = next((p for p in players if p.espnID == espnID), None)
+
+        fangraphsID = df[df["ESPNID"] == espnID]["IDFANGRAPHS"].values[0]
+        savantID = df[df["ESPNID"] == espnID]["MLBID"].values[0]
+        players.append(Player().from_data(playerData, espnID, fangraphsID, savantID))
+
 
 
         print(espnID)
