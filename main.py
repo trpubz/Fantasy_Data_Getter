@@ -5,7 +5,7 @@ v1.2
 modified: 19 MAY 2023
 by pubins.taylor
 """
-import time
+from time import sleep
 import re
 import os
 import json
@@ -22,25 +22,81 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import lxml
 
-rawHTML: str = None
+rawHTML: list[str] = []
 players: list[Player] = []
 
 def getESPNPlyrUniverse(url: str):
     """
-    Function that navigates to a url article that hosts Eric Karabel's (ESPN Fantasy Expert) weekly updated top 300
-    Fantasy Baseball players in H2H Categories Leagues.  This list serves as the viable Fantasy Player Universe that
-    sets the limits for players worth analyzing.
+    Function that navigates to the league's player rater URL.
     :param url: string corresponding to the article destination.  This changes from preseason to regular season
     :return: none
     """
     sdrvr = DKDriverConfig(dirDownload=dirHQ, headless=True)
     sdrvr.get(url)
     sdrvr.implicitly_wait(10)
-    elmArticle = sdrvr.find_element(By.CSS_SELECTOR, 'div.article-body')
-    global rawHTML
-    rawHTML = elmArticle.get_attribute("innerHTML")
+    
+    global rawHTML # bring in global variable
+
+    # get the position radio buttons
+    pickerGroup = sdrvr.find_element(By.CSS_SELECTOR, "#filterSlotIds")
+    position_buttons = pickerGroup.find_elements(By.TAG_NAME, "label")
+
+    for button in position_buttons:
+        posGroup = button.text
+        if posGroup == "Batters" or posGroup == "Pitchers":
+            try: 
+                button.click()
+                # give the page time to load
+                sleep(5)
+
+                # adjust number of pages depending on position
+                num_pages = 11 if posGroup == "Batters" else 14
+                # create empty table to hold the combined data
+                # this table will combine all the pages of data into one table
+                combinedTable = BeautifulSoup('', 'lxml').new_tag('table')
+                for page in range(1, num_pages + 1):
+                    sleep(5)
+                    # get the HTML of the page and parse it with BeautifulSoup
+                    soup = BeautifulSoup(sdrvr.page_source, 'lxml')
+                    # find the tables
+                    tables = soup.find_all('table')[:2] # there are 2 tables on the page, the first is the player names and the second is the player rater data
+                    # print(tables)
+                    
+                    playerInfoColumns = tables[0].find_all('tr')[1:]
+                    playerRaterColumns = tables[1].find_all('tr')[1:]
+                    # add the same rows from each table to the combined table
+                    for i in range(0, len(playerInfoColumns)):
+                        if i == 0:
+                            if page > 1: continue # skip the first row on all pages after the first page
+                            headers = playerInfoColumns[i].contents + playerRaterColumns[i].contents
+                            combinedHeaderRow = BeautifulSoup('', 'lxml').new_tag('thead')
+                            for header in headers:
+                                combinedHeaderRow.append(header)
+                            # print(combinedHeaderRow)
+                            combinedTable.append(combinedHeaderRow)
+                        else:
+                            wholeRow = playerInfoColumns[i].contents + playerRaterColumns[i].contents
+                            combinedPlayerRow = BeautifulSoup('', 'lxml').new_tag('tr')
+                            for plyr in wholeRow:
+                                combinedPlayerRow.append(plyr)
+                            # print(wholeRow)
+                            combinedTable.append(combinedPlayerRow)
+                    # go to the next page
+                    print(f"Finished processing page {page} of {num_pages} for {posGroup}")
+                    next_button = sdrvr.find_element(By.CSS_SELECTOR, "button.Button.Pagination__Button--next")
+                    next_button.click()
+                
+                # add the combined table to the rawHTML list
+                rawHTML.append(combinedTable.prettify())
+
+                # write out the combined table to a file
+                IOKit.writeOut(fileName="tempESPN" + posGroup, ext=".html", content=str(combinedTable.prettify()))
+
+            except Exception as e:
+                print(f"An error occurred while processing page {page}. Error message: {e}")
+                continue
+
     sdrvr.close()
-    IOKit.writeOut(fileName='tempH2HPlayerList', ext=".html", content=rawHTML) # not passing a directory will default to the project root
 
 def fetchPlayerKeyMap(url) -> pd.DataFrame:
     # check to see if tempPlayerKeyMap.json exists before proceeding
@@ -56,6 +112,7 @@ def fetchPlayerKeyMap(url) -> pd.DataFrame:
         # specify the columns ESPNID, IDFANGRAPHS, MLBID as strings
         df = df.astype({"ESPNID": str, "MLBID": str})
         print(df)
+        print(f"{filename} exists, returning dataframe")
         return df
     else:
         df = pd.read_html(url, header=1)[0] # returns a list of dataframes, so we need to index the first one, header is set to the second row
@@ -64,6 +121,7 @@ def fetchPlayerKeyMap(url) -> pd.DataFrame:
         df = df.astype({"ESPNID": str, "MLBID": str})
         df.to_json(filename, orient="records")
         print(df)
+        print("File pulled from the interwebs, returning dataframe")
         return df
 
 def buildPlayerUniverse(df: pd.DataFrame):
@@ -74,8 +132,10 @@ def buildPlayerUniverse(df: pd.DataFrame):
     :return: none
     """
     global rawHTML # global keyword allows access to the global variable
-    if rawHTML is None:
-        rawHTML = IOKit.readIn(fileName='tempH2HPlayerList', ext=".html")
+    if len(rawHTML) == 0:
+        rawHTML[0] = IOKit.readIn(fileName='tempESPNBatters', ext=".html")
+        rawHTML[1] = IOKit.readIn(fileName='tempESPNPitchers', ext=".html")
+        
 
     soup = BeautifulSoup(rawHTML, 'lxml')
     # print(soup.prettify())
@@ -192,12 +252,15 @@ def getSavantData(statcastData: list[Savant], waitTime: int = 10):
 
 
 if __name__ == '__main__':
-    espnPlyrUniverseURL = "https://www.espn.com/fantasy/baseball/story/_/id/35438162/fantasy-baseball-rankings-head-head-rotisserie-leagues-2023-espn-karabell"
+    leagueID = "10998"
+    espnPlayerRaterURL = "https://fantasy.espn.com/baseball/playerrater?leagueId=" + leagueID
     playerKeyDatabaseURL = "https://docs.google.com/spreadsheets/d/1JgczhD5VDQ1EiXqVG-blttZcVwbZd5_Ne_mefUGwJnk/pubhtml?gid=0&single=true"
+
     dfKeyMap = fetchPlayerKeyMap(url=playerKeyDatabaseURL)
-    # getESPNPlyrUniverse(url=espnPlyrUniverseURL)
-    buildPlayerUniverse(df=dfKeyMap)
+    getESPNPlyrUniverse(url=espnPlayerRaterURL)
+    # buildPlayerUniverse(df=dfKeyMap)
     
+    # TODO: Delete temporary files
     # TODO: Extract Fangraph pulls and Savant pulls into separate applet 
     # networkLatencyWaitTime = 10  # This value should be changes when the default times out due to slow network
     # getFangraphsProjections(projSys=[FGSystem.Steamer_RoS], waitTime=networkLatencyWaitTime)

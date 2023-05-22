@@ -1,6 +1,7 @@
 import os
 import glob
 
+getDir = lambda dir: dir if dir else "root"
 
 def writeOut(dir: str = "", fileName: str = "", ext: str = "", content: object = None):
     # w+: Opens a file for both writing and reading. Overwrites the existing file if the file exists.
@@ -8,7 +9,7 @@ def writeOut(dir: str = "", fileName: str = "", ext: str = "", content: object =
     with open(os.path.join(dir, (fileName + ext)), mode='w+', encoding='utf-8') as f:
         # print(content, file=f)
         f.write(content)
-        print(f'{fileName}{ext} successfully saved to {dir}')
+        print(f'{fileName}{ext} successfully saved to {getDir(dir)}')
         f.close()
 
 
@@ -26,7 +27,7 @@ def renameFile(dir: str, fExt: str, downloadedFile: str, newFileName: str):
             newDownloadPath = dir + newFileName + ".csv"
             os.rename(f, newDownloadPath)
             # locCSVs.append(newDownloadPath)
-            print(f"successfully downloaded {newFileName} to {dir}")
+            print(f"successfully downloaded {newFileName} to {getDir(dir)}")
             return
         
 
@@ -34,5 +35,5 @@ def readIn(dir: str = "", fileName: str = "", ext: str = "") -> any:
     with open(os.path.join(dir, (fileName + ext)), mode='r', encoding='utf-8') as f:
         content = f.read()
         f.close()
-        print(f'{fileName}{ext} successfully read from {dir}')
+        print(f'{fileName}{ext} successfully read from {getDir(dir)}')
         return content
