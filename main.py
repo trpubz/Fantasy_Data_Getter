@@ -22,7 +22,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import lxml
 
-rawHTML: list[str] = []
+rawHTML: str = ""
 players: list[Player] = []
 
 def getESPNPlyrUniverse(url: str):
@@ -40,7 +40,9 @@ def getESPNPlyrUniverse(url: str):
     # get the position radio buttons
     pickerGroup = sdrvr.find_element(By.CSS_SELECTOR, "#filterSlotIds")
     position_buttons = pickerGroup.find_elements(By.TAG_NAME, "label")
-
+    # create empty table to hold the combined data
+    # this table will combine all the pages of data into one table
+    combinedTable = BeautifulSoup('', 'lxml').new_tag('table')
     for button in position_buttons:
         posGroup = button.text
         if posGroup == "Batters" or posGroup == "Pitchers":
@@ -51,9 +53,7 @@ def getESPNPlyrUniverse(url: str):
 
                 # adjust number of pages depending on position
                 num_pages = 11 if posGroup == "Batters" else 14
-                # create empty table to hold the combined data
-                # this table will combine all the pages of data into one table
-                combinedTable = BeautifulSoup('', 'lxml').new_tag('table')
+                
                 for page in range(1, num_pages + 1):
                     sleep(5)
                     # get the HTML of the page and parse it with BeautifulSoup
@@ -66,8 +66,7 @@ def getESPNPlyrUniverse(url: str):
                     playerRaterColumns = tables[1].find_all('tr')[1:]
                     # add the same rows from each table to the combined table
                     for i in range(0, len(playerInfoColumns)):
-                        if i == 0:
-                            if page > 1: continue # skip the first row on all pages after the first page
+                        if i == 0 and page == 1 and posGroup == "Batters": # only add the headers once
                             headers = playerInfoColumns[i].contents + playerRaterColumns[i].contents
                             combinedHeaderRow = BeautifulSoup('', 'lxml').new_tag('thead')
                             for header in headers:
@@ -85,17 +84,16 @@ def getESPNPlyrUniverse(url: str):
                     print(f"Finished processing page {page} of {num_pages} for {posGroup}")
                     next_button = sdrvr.find_element(By.CSS_SELECTOR, "button.Button.Pagination__Button--next")
                     next_button.click()
-                
-                # add the combined table to the rawHTML list
-                rawHTML.append(combinedTable.prettify())
-
-                # write out the combined table to a file
-                IOKit.writeOut(fileName="tempESPN" + posGroup, ext=".html", content=str(combinedTable.prettify()))
 
             except Exception as e:
                 print(f"An error occurred while processing page {page}. Error message: {e}")
                 continue
 
+    # add the combined table to the rawHTML list
+    rawHTML = combinedTable.prettify()
+
+    # write out the combined table to a file
+    IOKit.writeOut(fileName="tempESPNPlayerUniverse", ext=".html", content=rawHTML)
     sdrvr.close()
 
 def fetchPlayerKeyMap(url) -> pd.DataFrame:
@@ -132,39 +130,32 @@ def buildPlayerUniverse(df: pd.DataFrame):
     :return: none
     """
     global rawHTML # global keyword allows access to the global variable
-    if len(rawHTML) == 0:
-        rawHTML[0] = IOKit.readIn(fileName='tempESPNBatters', ext=".html")
-        rawHTML[1] = IOKit.readIn(fileName='tempESPNPitchers', ext=".html")
-        
+    if rawHTML == "":
+        rawHTML = IOKit.readIn(fileName='tempESPNPlayerUniverse', ext=".html")
 
     soup = BeautifulSoup(rawHTML, 'lxml')
     # print(soup.prettify())
     global players
-    # the specific "inline inline-table" class is the only one that contains the the positiional tables
-    # DH table also uses "inline inline-with-table" class
-    # If you need the the Top 300 use "inline inline-with-table" class
-    className = re.compile("table$") 
-    tables = soup.find_all("aside", class_=className)[1:] # the first table is the Top 300 so use range slicing to shred it
-    for posGroup in tables:
-        pos: str = posGroup.find("h2").text.split(" ", maxsplit=2)[2:][0] # slice off the first two words and then exit list
-        playerRows = posGroup.find_all("tr")[1:] # the first row is the table header so use range slicing to shred it
-        for player in playerRows:
-            # column 1 is Pos Rank, 2 is Overall Rank, 3 is trend, 4 is Player, 5 is team, 6 is other pos, 7 is age
-            playerData = player.find_all("td")
-            espnID: str = playerData[3].find("a")["href"].split("/")[-2]
-            # if espnID is a match in the player list, then update the player's position
-            # else, create a new player and append it to the list
-            p = next((p for p in players if p.espnID == espnID), None)
-            if p is None:
-                fangraphsID = df[df["ESPNID"] == espnID]["IDFANGRAPHS"].values[0]
-                savantID = df[df["ESPNID"] == espnID]["MLBID"].values[0]
-                players.append(Player().from_data(playerData, espnID, fangraphsID, savantID, pos))
-            else:
-                # update the player's position rank
-                pass
+
+    playerRows = soup.find_all("tr")
+
+    for player in playerRows:
+        # column 1 is Ovr Rnk, 2 is name & pos & team, 3 is Fantasy Team, 4 is availability, the rest are player rater stats
+        playerData = player.find_all("td")
+        espnID: str = playerData[1].find(class_ = "player-headshot").find("src", re.compile("r'full/(\d+)\.png'"))
+        # if espnID is a match in the player list, then update the player's position
+        # else, create a new player and append it to the list
+        p = next((p for p in players if p.espnID == espnID), None)
+        if p is None:
+            fangraphsID = df[df["ESPNID"] == espnID]["IDFANGRAPHS"].values[0]
+            savantID = df[df["ESPNID"] == espnID]["MLBID"].values[0]
+            players.append(Player().from_data(playerData, espnID, fangraphsID, savantID, pos))
+        else:
+            # update the player's position rank
+            pass
 
 
-            print(espnID)
+        print(espnID)
 
 
     
@@ -257,8 +248,8 @@ if __name__ == '__main__':
     playerKeyDatabaseURL = "https://docs.google.com/spreadsheets/d/1JgczhD5VDQ1EiXqVG-blttZcVwbZd5_Ne_mefUGwJnk/pubhtml?gid=0&single=true"
 
     dfKeyMap = fetchPlayerKeyMap(url=playerKeyDatabaseURL)
-    getESPNPlyrUniverse(url=espnPlayerRaterURL)
-    # buildPlayerUniverse(df=dfKeyMap)
+    # getESPNPlyrUniverse(url=espnPlayerRaterURL)
+    buildPlayerUniverse(df=dfKeyMap)
     
     # TODO: Delete temporary files
     # TODO: Extract Fangraph pulls and Savant pulls into separate applet 
