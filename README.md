@@ -1,13 +1,13 @@
 # Fantasy_Data_Getter
-retrieves all relevant Fantasy Data (ESPN Player Universe, Fangraphs Projections, Baseball Savant Data)
+Retrieves only relevant ESPN Player Universe from the league's Player Rater first handlful of pages.
 
 ## Dependancies
-- URL for ESPN's Top 300 Player
-- FG [url?]
-- BS [url?]
+- espnPlayerRaterURL = "https://fantasy.espn.com/baseball/playerrater?leagueId=" + leagueID
+- Player Key Map reference from [here]("https://docs.google.com/spreadsheets/d/e/2PACX-1vSEw6LWoxJrrBSFY39wA_PxSW5SG_t3J7dJT3JsP2DpMF5vWY6HJY071d8iNIttYDnArfQXg-oY_Q6I/pubhtml?gid=0&single=true")
+  - database is managed by @trpubz
 
 ## Outputs
-- shaved down .html of ESPN's Top 300 Players for later processing by a [diff app](https://github.com/trpubz/ESPN_FantasyPlayerList)
+- espnPlayerUniverse.json
   - .json schema is: 
 ```
 {
@@ -48,5 +48,3 @@ retrieves all relevant Fantasy Data (ESPN Player Universe, Fangraphs Projections
   }
 }
 ```
-- .csv from Fangraphs
-- .csv from baseball savant

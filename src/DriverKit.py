@@ -1,7 +1,8 @@
 # DriverKit.py
 # by pubins.taylor
 # created 10MAY22
-# v0.1
+# modified 23MAY22
+# version 1.0
 # Houses the generics for Selenium WebDriver for multiple uses
 import os
 

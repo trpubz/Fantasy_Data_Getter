@@ -1,6 +1,6 @@
 # File with global variables
 # by pubins.taylor
-# v0.1
+# v0.2
 # lastUpdate 19 MAY 2023
 
 from enum import Enum

@@ -1,17 +1,13 @@
 """
 Description: PlayerKit is a module that contains the abstracts the player creation from the main executable
 by pubins.taylor
-version: 0.0.1
+version: 1.0
 date created: 19 MAY 2023
-date modified: 19 MAY 2023
+date modified: 23 MAY 2023
 """
 import re
-import json
 
 from bs4 import BeautifulSoup
-
-
-# TODO: player position should be a list object or maybe a dictionary object with the key being the position and the value being the position rank
 
 # create a class that represents a player, the attributes need to inclue the following: name, position dictionary, ESPN ID, Fangraphs ID, team, age 
 
