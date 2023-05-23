@@ -5,10 +5,12 @@
 # Houses the generics for Selenium WebDriver for multiple uses
 import os
 
-from Globals import FGSystem, FGPosGrp, Savant, SavantPosGrp, SavantDownload
+from src.Globals import FGSystem, FGPosGrp, Savant, SavantPosGrp, SavantDownload
 
 from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from selenium.webdriver.chrome.service import Service as ChromeService
+from webdriver_manager.chrome import ChromeDriverManager
 
 
 def DKDriverConfig(dirDownload: os.path = "root", headless=True) -> webdriver:
@@ -22,11 +24,14 @@ def DKDriverConfig(dirDownload: os.path = "root", headless=True) -> webdriver:
     prefs = {"download.default_directory": dirDownload}
     # example: prefs = {"download.default_directory" : "C:\Tutorial\down"};
     options.add_experimental_option("prefs", prefs)
-    options.headless = headless
+    if headless==True:
+        options.add_argument("--headless")
     # Set the load strategy so that it does not wait for adds to load
     caps = DesiredCapabilities.CHROME
     caps["pageLoadStrategy"] = "none"
-    driver = webdriver.Chrome(options=options, desired_capabilities=caps)
+    # ChromeDriverManager().install() downloads latest version of chrome driver to avoid compatibility issues
+    driver = webdriver.Chrome(options=options, service=ChromeService(ChromeDriverManager().install()), desired_capabilities=caps)
+
     return driver
 
 
@@ -51,7 +56,7 @@ def DKDirBuilder(dirDownload: str = "root") -> os.path:
     return outputPath
 
 
-def DKFGLinkBuilder(projections: List[FGSystem], pos: List[FGPosGrp] = (FGPosGrp.HIT, FGPosGrp.PIT)) -> [{str: str}]:
+def DKFGLinkBuilder(*projections: list[FGSystem], pos: list[FGPosGrp] = (FGPosGrp.HIT, FGPosGrp.PIT)) -> list[dict[str, str]]:
     """
     Builds Fangraphs URLs based on user need.
     :param projections: A list of Projections enums representing the desired FanGraphs projection options
@@ -70,7 +75,7 @@ def DKFGLinkBuilder(projections: List[FGSystem], pos: List[FGPosGrp] = (FGPosGrp
     return urls
 
 
-def DKSavantLinkBuilder(statcast: List[Savant], pos: List[SavantPosGrp] = (SavantPosGrp.HIT, SavantPosGrp.PIT)) -> List[{str: str}]:
+def DKSavantLinkBuilder(statcast: list[Savant], pos: list[SavantPosGrp] = (SavantPosGrp.HIT, SavantPosGrp.PIT)) -> list[dict[str: str]]:
     """
     Builds baseball.savant URLs based on user need.
     :param statcast: A list of Savant enums representing the desired baseball savant stats
