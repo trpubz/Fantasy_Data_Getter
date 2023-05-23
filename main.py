@@ -230,37 +230,6 @@ def deleteTempFiles():
         IOKit.renameFile(dir=dirFG, fExt=".csv", downloadedFile=downloadedFile, newFileName=url["id"])
 
 
-def getSavantData(statcastData: list[Savant], waitTime: int = 10):
-    """
-    Receives requested baseball savant data products, builds URLs to match request, invokes Selenium to download the
-    .csv, and renames the file according to the dataset
-    :param waitTime: This is the hard wait time for the download to finish.  Over a slow network, the default value will
-    time out too quickly and this value should increase.
-    :param statcastData: Savant enum representing the desired statcast data object
-    :return: none
-    """
-
-    dirSvnt = dirHQ + "regseason/"
-    savantDestinations: list[dict] = DKSavantLinkBuilder(statcast=statcastData)
-    for dest in savantDestinations:
-        sdrvr = DKDriverConfig(dirDownload=dirSvnt, headless=True)
-        sdrvr.get(dest["url"])
-        try:
-            # Wait a reasonable time that a person would take
-            sdrvr.implicitly_wait(15)
-            # Wait until the element to download is available and then stop loading
-            downloadBtn = sdrvr.find_element(By.ID, "btnCSV")
-            time.sleep(3)
-            downloadBtn.click()
-            print("clicked 'Download CSV'")
-            time.sleep(waitTime)
-        except exceptions as e:
-            sdrvr.close()
-            print(e.message)
-        sdrvr.close()
-
-        IOKit.renameFile(dir=dirSvnt, fExt=".csv", downloadedFile=dest["download"], newFileName=dest["id"])
-
 
 if __name__ == '__main__':
     leagueID = "10998"
