@@ -1,8 +1,8 @@
 """
 Automates the gathering of useful Fantasy Baseball Player Player Data.  To include the ESPN Fantasy Universe, the Fangraphs
 Projections, & the Baseball Savant expected stats.
-v1.2
-modified: 19 MAY 2023
+v1.3
+modified: 23 MAY 2023
 by pubins.taylor
 """
 from time import sleep
