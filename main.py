@@ -63,6 +63,7 @@ def getESPNPlyrUniverse(url: str):
                     tables = soup.find_all('table')[:2] # there are 2 tables on the page, the first is the player names and the second is the player rater data
                     # print(tables)
                     
+                    # there are 2 header rows, shed the first one
                     playerInfoColumns = tables[0].find_all('tr')[1:]
                     playerRaterColumns = tables[1].find_all('tr')[1:]
                     # add the same rows from each table to the combined table
@@ -74,13 +75,14 @@ def getESPNPlyrUniverse(url: str):
                                 combinedHeaderRow.append(header)
                             # print(combinedHeaderRow)
                             combinedTable.append(combinedHeaderRow)
-                        else:
+                        elif i > 0:
                             wholeRow = playerInfoColumns[i].contents + playerRaterColumns[i].contents
                             combinedPlayerRow = BeautifulSoup('', 'lxml').new_tag('tr')
                             for plyr in wholeRow:
                                 combinedPlayerRow.append(plyr)
                             # print(wholeRow)
                             combinedTable.append(combinedPlayerRow)
+                        else: continue # if i == 0 on any other page, then skip it
                     # go to the next page
                     print(f"Finished processing page {page} of {num_pages} for {posGroup}")
                     next_button = sdrvr.find_element(By.CSS_SELECTOR, "button.Button.Pagination__Button--next")
@@ -114,8 +116,13 @@ def fetchPlayerKeyMap(url) -> pd.DataFrame:
         print(f"{filename} exists, returning dataframe")
         return df
     else:
-        df = pd.read_html(url, header=1)[0] # returns a list of dataframes, so we need to index the first one, header is set to the second row
-        df.dropna(subset=["MLBID", "ESPNID"], inplace=True) # drop all rows that have NaN in the ESPNID column
+        df = pd.read_html(url, header=1, index_col=None)[0] # returns a list of dataframes, so we need to index the first one, header is set to the second row
+        df.drop(columns=df.columns[0], inplace=True) # drop the first column, which is the html index column, this uses pandas indexing
+        df.drop(index=0, inplace=True) # drop the first row, which is NaN
+        print(f"{df.count} number of players before dropping empty values") 
+        df.dropna(subset=["MLBID", "ESPNID"], inplace=True)
+        print(f"{df.count} number of players after dropping empty values")
+        # drop all rows that have NaN in the ESPNID column
         df = df.astype({"ESPNID": int, "MLBID": int}) # casting from float to str requires int as an intermediate step
         df = df.astype({"ESPNID": str, "MLBID": str})
         df.to_json(filename, orient="records")
@@ -123,7 +130,7 @@ def fetchPlayerKeyMap(url) -> pd.DataFrame:
         print("File pulled from the interwebs, returning dataframe")
         return df
 
-def buildPlayerUniverse(df: pd.DataFrame):
+def buildPlayerUniverse(dfKeyMap: pd.DataFrame):
     """
     Function that parses the ESPN Fantasy Universe HTML file and extracts the player names and their ESPN Player IDs.
     This function is dependent on the ESPN Fantasy Universe HTML file being downloaded and saved to the project root.
@@ -142,21 +149,37 @@ def buildPlayerUniverse(df: pd.DataFrame):
 
     playerRows = soup.find_all("tr")
 
-    for player in playerRows:
+    for player in playerRows: # first row is designated by the "th" tag, so no need to skip it here
         playerData = player.find_all("td")
         idLoc: str = playerData[1].find(class_ = "player-headshot").find("img").get("src")
         espnID = re.findall(r'full/(\d+)\.png', idLoc)[0]
         if espnID is None: print(f"espnID is None for {playerData[1]}")
         # shohei player id is 39382
-
-        fangraphsID = df[df["ESPNID"] == espnID]["FANGRAPHSID"].values[0]
-        savantID = df[df["ESPNID"] == espnID]["MLBID"].values[0]
-        players.append(Player().from_data(playerData, espnID, fangraphsID, savantID))
+        try:
+            fangraphsID = dfKeyMap[dfKeyMap["ESPNID"] == espnID]["FANGRAPHSID"].values[0]
+            savantID = dfKeyMap[dfKeyMap["ESPNID"] == espnID]["MLBID"].values[0]
+            players.append(Player().from_data(playerData, espnID, fangraphsID, savantID))
+        except Exception as e:
+            print(f"An error occurred while processing {playerData[1].get_text(strip=True)}. \
+                  Most likely, the player is not in the key map. Error message: {e}")
+            continue
 
     print(f"Finished building player universe.  {len(players)} players found.")
 
+    # save the player universe to a json file
+    dirHQ = os.path.dirname("/Users/Shared/BaseballHQ/resources/extract/")
+    IOKit.writeOut(dir=dirHQ, fileName="espnPlayerUniverse", ext=".json", content=players)
 
-    
+
+def deleteTempFiles():
+    """
+    Function that deletes the temp files that were created during the execution of the program
+    :return: none
+    """
+    # delete any file that starts with "temp"
+    for file in os.listdir():
+        if file.startswith("temp"):
+            os.remove(file)
 
 
 def getFangraphsProjections(projSys: list[FGSystem] = (FGSystem.Steamer_RoS,), waitTime: int = 5):
@@ -243,13 +266,16 @@ def getSavantData(statcastData: list[Savant], waitTime: int = 10):
 if __name__ == '__main__':
     leagueID = "10998"
     espnPlayerRaterURL = "https://fantasy.espn.com/baseball/playerrater?leagueId=" + leagueID
-    playerKeyDatabaseURL = "https://docs.google.com/spreadsheets/d/1wh6oozpdSESWd5TYv8PqGNiR5KAaMTEhkMAhWnyCs7I/edit?usp=sharing"
+    playerKeyDatabaseURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEw6LWoxJrrBSFY39wA_PxSW5SG_t3J7dJT3JsP2DpMF5vWY6HJY071d8iNIttYDnArfQXg-oY_Q6I/pubhtml?gid=0&single=true"
 
     dfKeyMap = fetchPlayerKeyMap(url=playerKeyDatabaseURL)
-    # getESPNPlyrUniverse(url=espnPlayerRaterURL)
-    # buildPlayerUniverse(df=dfKeyMap)
+    # check to see if tempESPNPlayerRater.html exists; if not, download it
+    if not os.path.exists("tempESPNPlayerUniverse.html"):
+        getESPNPlyrUniverse(url=espnPlayerRaterURL)
+    buildPlayerUniverse(dfKeyMap=dfKeyMap)
+
+    deleteTempFiles()
     
-    # TODO: Delete temporary files
     # TODO: Extract Fangraph pulls and Savant pulls into separate applet 
     # networkLatencyWaitTime = 10  # This value should be changes when the default times out due to slow network
     # getFangraphsProjections(projSys=[FGSystem.Steamer_RoS], waitTime=networkLatencyWaitTime)

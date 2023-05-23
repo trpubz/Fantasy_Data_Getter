@@ -6,6 +6,7 @@ date created: 19 MAY 2023
 date modified: 19 MAY 2023
 """
 import re
+import json
 
 from bs4 import BeautifulSoup
 
@@ -28,18 +29,6 @@ class Player:
 
     @classmethod
     def from_data(cls, data: list, espnID: str, fangraphsID: str, savantID: str):
-        # create a match statement to convert the pos string to an abbreviation
-        # match pos:
-        #     case "Catchers": pos = "C"
-        #     case "First Basemen": pos = "1B"
-        #     case "Second Basemen": pos = "2B"
-        #     case "Third Basemen": pos = "3B"
-        #     case "Shortstops": pos = "SS"
-        #     case "Outfields": pos = "OF"
-        #     case "Designated Hitters": pos = "DH"
-        #     case "Starting Pitchers": pos = "SP"
-        #     case "Relief Pitchers": pos = "RP"
-
         name = data[1].find("a", class_="AnchorLink").get_text(strip=True)
         ovr = int(data[0].text)
         reg = re.compile(".*playerpos.*")
@@ -68,20 +57,20 @@ class Player:
         playerRater["%ROS"] = float(next(i for i in data if i.find("div", {"title": re.compile(".*rostered.*")})).get_text(strip=True))
         playerRater["PRTR"] = float(next(i for i in data if i.find("div", {"title": re.compile(".*Rating.*")})).get_text(strip=True))
 
-        return cls(name, ovr, positions, team, owner, playerRater, espnID, fangraphsID, savantID)
-    
-    def add_position(self, data: any, pos: str):
-        # create a match statement to convert the pos string to an abbreviation
-        match pos:
-            case "Catcher": pos = "C"
-            case "First Base": pos = "1B"
-            case "Second Base": pos = "2B"
-            case "Third Base": pos = "3B"
-            case "Shortstop": pos = "SS"
-            case "Outfield": pos = "OF"
-            case "Designated Hitter": pos = "DH"
-            case "Starting Pitcher": pos = "SP"
-            case "Relief Pitcher": pos = "RP"
+        return cls(name=name, ovr=ovr, positions=positions, team=team, owner=owner, playerRater=playerRater, 
+                   espnID=espnID, fangraphsID=fangraphsID, savantID=savantID)
 
-        self.position[pos] = int(data.select_one('selector_for_position_rank').text)
+
+    def to_dict(self):
+        return {
+            '_name': self._name,
+            'team': self.team,
+            'ovr': self.ovr,
+            'positions': self.positions,
+            'owner': self.owner,
+            'playerRater': self.playerRater,
+            'espnID': self.espnID,
+            'fangraphsID': self.fangraphsID,
+            'savantID': self.savantID
+        }
     
