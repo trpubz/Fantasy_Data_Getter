@@ -182,7 +182,6 @@ def deleteTempFiles():
             os.remove(file)
 
 
-def getFangraphsProjections(projSys: list[FGSystem] = (FGSystem.Steamer_RoS,), waitTime: int = 5):
     """
     Function that takes a requested projection system, builds URLs to match request, invokes Selenium to download the
     .csv, and renames the file according to the requested projection system
