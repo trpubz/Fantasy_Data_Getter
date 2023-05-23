@@ -49,10 +49,26 @@ class Player:
         owner = data[2].get_text(strip=True).split(" ")[0] # if the owner is not listed, then the player is a free agent and the splitting the text will drop the waiver date and return only WA
         if not any(p for p in positions if p.__contains__("P")):
             playerRater = {
-                "R": float(data[next(i for i in data.parent.index)].text),
+                "R": float(next(i for i in data if i.find("div", {"title": "Runs Scored"})).get_text(strip=True)),
+                "HR": float(next(i for i in data if i.find("div", {"title": "Home Runs"})).get_text(strip=True)),
+                "RBI": float(next(i for i in data if i.find("div", {"title": "Runs Batted In"})).get_text(strip=True)),
+                "SBN": float(next(i for i in data if i.find("div", {"title": "Net Stolen Bases"})).get_text(strip=True)),
+                "OBP": float(next(i for i in data if i.find("div", {"title": "On Base Pct"})).get_text(strip=True)),
+                "SLG": float(next(i for i in data if i.find("div", {"title": "Slugging Pct"})).get_text(strip=True)),
             }
+        else:
+            playerRater = {
+                "IP": float(next(i for i in data if i.find("div", {"title": "Innings Pitched"})).get_text(strip=True)),
+                "QS": float(next(i for i in data if i.find("div", {"title": "Quality Starts"})).get_text(strip=True)),
+                "ERA": float(next(i for i in data if i.find("div", {"title": "Earned Run Average"})).get_text(strip=True)),
+                "WHIP": float(next(i for i in data if i.find("div", {"title": "Walks plus Hits Per Innings Pitched"})).get_text(strip=True)),
+                "K/9": float(next(i for i in data if i.find("div", {"title": "Strikeouts per 9 Innings"})).get_text(strip=True)),
+                "SVHD": float(next(i for i in data if i.find("div", {"title": "Saves Plus Holds"})).get_text(strip=True)),
+            }
+        playerRater["%ROS"] = float(next(i for i in data if i.find("div", {"title": re.compile(".*rostered.*")})).get_text(strip=True))
+        playerRater["PRTR"] = float(next(i for i in data if i.find("div", {"title": re.compile(".*Rating.*")})).get_text(strip=True))
 
-        return cls(name, ovr, positions, team, owner, espnID, fangraphsID, savantID)
+        return cls(name, ovr, positions, team, owner, playerRater, espnID, fangraphsID, savantID)
     
     def add_position(self, data: any, pos: str):
         # create a match statement to convert the pos string to an abbreviation

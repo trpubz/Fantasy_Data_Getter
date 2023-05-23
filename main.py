@@ -21,6 +21,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from bs4 import BeautifulSoup
 import pandas as pd
 import lxml
+import html5lib
 
 rawHTML: str = ""
 players: list[Player] = []
@@ -142,21 +143,17 @@ def buildPlayerUniverse(df: pd.DataFrame):
     playerRows = soup.find_all("tr")
 
     for player in playerRows:
-        # column 1 is Ovr Rnk, 2 is name & pos & team, 3 is Fantasy Team, 4 is availability, the rest are player rater stats
         playerData = player.find_all("td")
         idLoc: str = playerData[1].find(class_ = "player-headshot").find("img").get("src")
         espnID = re.findall(r'full/(\d+)\.png', idLoc)[0]
-        
+        if espnID is None: print(f"espnID is None for {playerData[1]}")
         # shohei player id is 39382
-        # p = next((p for p in players if p.espnID == espnID), None)
 
-        fangraphsID = df[df["ESPNID"] == espnID]["IDFANGRAPHS"].values[0]
+        fangraphsID = df[df["ESPNID"] == espnID]["FANGRAPHSID"].values[0]
         savantID = df[df["ESPNID"] == espnID]["MLBID"].values[0]
         players.append(Player().from_data(playerData, espnID, fangraphsID, savantID))
 
-
-
-        print(espnID)
+    print(f"Finished building player universe.  {len(players)} players found.")
 
 
     
@@ -246,11 +243,11 @@ def getSavantData(statcastData: list[Savant], waitTime: int = 10):
 if __name__ == '__main__':
     leagueID = "10998"
     espnPlayerRaterURL = "https://fantasy.espn.com/baseball/playerrater?leagueId=" + leagueID
-    playerKeyDatabaseURL = "https://docs.google.com/spreadsheets/d/1JgczhD5VDQ1EiXqVG-blttZcVwbZd5_Ne_mefUGwJnk/pubhtml?gid=0&single=true"
+    playerKeyDatabaseURL = "https://docs.google.com/spreadsheets/d/1wh6oozpdSESWd5TYv8PqGNiR5KAaMTEhkMAhWnyCs7I/edit?usp=sharing"
 
     dfKeyMap = fetchPlayerKeyMap(url=playerKeyDatabaseURL)
     # getESPNPlyrUniverse(url=espnPlayerRaterURL)
-    buildPlayerUniverse(df=dfKeyMap)
+    # buildPlayerUniverse(df=dfKeyMap)
     
     # TODO: Delete temporary files
     # TODO: Extract Fangraph pulls and Savant pulls into separate applet 
