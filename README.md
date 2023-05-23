@@ -11,40 +11,54 @@ Retrieves only relevant ESPN Player Universe from the league's Player Rater firs
   - .json schema is: 
 ```
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "array",
-  "items": {
-    "type": "object",
-    "properties": {
-      "_name": {
-        "type": "string"
-      },
-      "firstName": {
-        "type": "string"
-      },
-      "idESPN": {
-        "type": "string"
-      },
-      "idFangraphs": {
-        "type": "string"
-      },
-      "lastName": {
-        "type": "string"
-      },
-      "pos": {
-        "type": "array",
-        "items": {
-          "type": "string"
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "array",
+    "items": [
+        {
+            "type": "object",
+            "properties": {
+                "_name": { "type": "string" },
+                "team": { "type": "string" },
+                "ovr": { "type": "integer" },
+                "positions": {
+                    "type": "array",
+                    "items": [
+                        { "type": "string" }
+                    ]
+                },
+                "owner": { "type": "string" },
+                "playerRater": {
+                    "type": "object",
+                    "properties": {
+                        "R": { "type": "number" },
+                        "HR": { "type": "number" },
+                        "RBI": { "type": "number" },
+                        "SBN": { "type": "number" },
+                        "OBP": { "type": "number" },
+                        "SLG": { "type": "number" },
+                        "%ROS": { "type": "number" },
+                        "PRTR": { "type": "number" }
+                    },
+                    "required": [
+                        "%ROS",
+                        "PRTR"
+                    ]
+                },
+                "espnID": { "type": "string" },
+                "fangraphsID": { "type": "string" },
+                "savantID": { "type": "string" }
+            },
+            "required": [
+                "_name",
+                "team",
+                "ovr",
+                "positions",
+                "owner",
+                "playerRater",
+                "espnID",
+                "fangraphsID",
+                "savantID"
+            ]
         }
-      },
-      "suffix": {
-        "type": "string"
-      },
-      "tm": {
-        "type": "string"
-      }
-    },
-    "required": ["_name", "firstName", "idESPN", "lastName", "pos", "tm"]
-  }
 }
 ```
