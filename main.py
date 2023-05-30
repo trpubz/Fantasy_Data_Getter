@@ -49,7 +49,9 @@ def getESPNPlyrUniverse(url: str):
                 button.click()
                 # give the page time to load
                 sleep(5)
-
+                # TODO: sort the page by %Rostered column
+                # TODO: provide logic to stop after %Rostered drops below 0.2%
+                # TODO: this will override the number of pages hardcoding
                 # adjust number of pages depending on position
                 num_pages = 11 if posGroup == "Batters" else 14
                 
