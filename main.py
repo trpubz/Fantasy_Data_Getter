@@ -14,12 +14,9 @@ import src.IOKit as IOKit
 from src.Globals import dirHQ
 from src.PlayerKit import Player
 
-# from selenium.common import exceptions
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
 import pandas as pd
-import lxml
-import html5lib
 
 rawHTML: str = ""
 players: list[Player] = []
