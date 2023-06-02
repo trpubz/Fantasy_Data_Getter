@@ -198,4 +198,4 @@ if __name__ == '__main__':
         getESPNPlyrUniverse(url=espnPlayerRaterURL)
     buildPlayerUniverse(dfKeyMap=dfKeyMap)
 
-    # pipdeleteTempFiles()
+    deleteTempFiles()
