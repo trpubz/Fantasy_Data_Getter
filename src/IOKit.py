@@ -6,6 +6,7 @@ from src.PlayerKit import Player
 
 getDir = lambda dir: dir if dir else "root"
 
+
 def writeOut(dir: str = "", fileName: str = "", ext: str = "", content: object = None):
     # w+: Opens a file for both writing and reading. Overwrites the existing file if the file exists.
     # If the file does not exist, creates a new file for reading and writing.
