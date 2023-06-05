@@ -15,6 +15,8 @@ from src.Globals import dirHQ
 from src.PlayerKit import Player
 
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 import pandas as pd
 
@@ -22,18 +24,21 @@ rawHTML: str = ""
 players: list[Player] = []
 
 
-def getESPNPlyrUniverse(url: str):
+def getESPNPlyrUniverse(url: str, headless: bool = True):
     """
     Function that navigates to the league's player rater URL.
     :param url: string corresponding to the article destination.  This changes from preseason to regular season
+    :param headless: boolean that determines whether to run the browser in headless mode
     :return: none
     """
-    sdrvr = DKDriverConfig(dirDownload=dirHQ, headless=True)
+    sdrvr = DKDriverConfig(dirDownload=dirHQ, headless=headless)
     sdrvr.get(url)
     sdrvr.implicitly_wait(10)
 
     global rawHTML  # bring in global variable
-
+    # sort the page by %Rostered
+    pctRosteredButton = sdrvr.find_element(By.XPATH, "//th[div[span[contains(text(),'%ROST')]]]")
+    pctRosteredButton.click()
     # get the position radio buttons
     pickerGroup = sdrvr.find_element(By.CSS_SELECTOR, "#filterSlotIds")
     position_buttons = pickerGroup.find_elements(By.TAG_NAME, "label")
@@ -46,23 +51,22 @@ def getESPNPlyrUniverse(url: str):
             try:
                 button.click()
                 # give the page time to load
-                sleep(5)
-                # TODO: sort the page by %Rostered column
-                # TODO: provide logic to stop after %Rostered drops below 0.2%
-                # TODO: this will override the number of pages hardcoding
-                # adjust number of pages depending on position
-                num_pages = 11 if posGroup == "Batters" else 14
-
-                for page in range(1, num_pages + 1):
-                    sleep(5)
+                WebDriverWait(sdrvr, 5).until(
+                    EC.presence_of_element_located((
+                        By.CSS_SELECTOR, "tbody.Table__TBODY")))
+                page = 1
+                pctRostered: float = 99.9
+                while True:
+                    WebDriverWait(sdrvr, 5).until(
+                        EC.presence_of_element_located((
+                            By.CSS_SELECTOR, "tbody.Table__TBODY")))
                     # get the HTML of the page and parse it with BeautifulSoup
                     soup = BeautifulSoup(sdrvr.page_source, 'lxml')
-                    # find the tables
-                    tables = soup.find_all('table')[
-                             :2]  # there are 2 tables on the page, the first is the player names and the second is the player rater data
-                    # print(tables)
+                    # there are 2 tables on the page,
+                    # the first is the player names and the second is the player rater data
+                    tables = soup.find_all('table')[:2]
 
-                    # there are 2 header rows, shed the first one
+                    # there are 2 header rows, shed the first one with [1:] slicing
                     playerInfoColumns = tables[0].find_all('tr')[1:]
                     playerRaterColumns = tables[1].find_all('tr')[1:]
                     # add the same rows from each table to the combined table
@@ -79,15 +83,23 @@ def getESPNPlyrUniverse(url: str):
                             combinedPlayerRow = BeautifulSoup('', 'lxml').new_tag('tr')
                             for plyr in wholeRow:
                                 combinedPlayerRow.append(plyr)
-                            # print(wholeRow)
+                            # updated the pctRostered variable
+                            pctRostered = float(combinedPlayerRow.select_one("div[title*='rostered']").string)
                             combinedTable.append(combinedPlayerRow)
                         else:
                             continue  # if i == 0 on any other page, then skip it
                     # go to the next page
-                    print(f"Finished processing page {page} of {num_pages} for {posGroup}")
-                    next_button = sdrvr.find_element(By.CSS_SELECTOR, "button.Button.Pagination__Button--next")
-                    next_button.click()
-
+                    print(f"Finished processing page {page} for {posGroup}")
+                    page += 1
+                    if pctRostered < 1.1:
+                        page = 1  # reset value
+                        break
+                    else:
+                        next_button = WebDriverWait(sdrvr, 7).until(
+                                        EC.element_to_be_clickable(
+                                            (By.CSS_SELECTOR, "button.Button.Pagination__Button--next")))
+                        # next_button = sdrvr.find_element(By.CSS_SELECTOR, "button.Button.Pagination__Button--next")
+                        next_button.click()
             except Exception as e:
                 print(f"An error occurred while processing page {page}. Error message: {e}")
                 continue
@@ -155,9 +167,13 @@ def buildPlayerUniverse(dfKeyMap: pd.DataFrame):
 
     for player in playerRows:  # first row is designated by the "th" tag, so no need to skip it here
         playerData = player.find_all("td")
-        idLoc: str = playerData[1].find(class_="player-headshot").find("img").get("src")
-        espnID = re.findall(r'full/(\d+)\.png', idLoc)[0]
-        if espnID is None: print(f"espnID is None for {playerData[1]}")
+        # location ID can be in either the src or data-src attribute
+        idLoc: str = playerData[1].find("img").get("src") or playerData[1].find("img").get("data-src")
+        try:
+            espnID = re.findall(r'full/(\d+)\.png', idLoc)[0]
+        except Exception as e:
+            print(f"cannot find espnID for {playerData[1].get_text(strip=True)}.  Error message: {e}")
+            continue
         # shohei player id is 39382
         try:
             # TODO: add BREFID to the player object if present in the key map; may need to refactor the
@@ -190,12 +206,14 @@ def deleteTempFiles():
 if __name__ == '__main__':
     leagueID = "10998"
     espnPlayerRaterURL = "https://fantasy.espn.com/baseball/playerrater?leagueId=" + leagueID
-    playerKeyDatabaseURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEw6LWoxJrrBSFY39wA_PxSW5SG_t3J7dJT3JsP2DpMF5vWY6HJY071d8iNIttYDnArfQXg-oY_Q6I/pubhtml?gid=0&single=true"
+    playerKeyDatabaseURL = "https://docs.google.com/spreadsheets/d/e/2PACX" \
+                           "-1vSEw6LWoxJrrBSFY39wA_PxSW5SG_t3J7dJT3JsP2DpMF5vWY6HJY071d8iNIttYDnArfQXg-oY_Q6I/pubhtml" \
+                           "?gid=0&single=true"
 
     dfKeyMap = fetchPlayerKeyMap(url=playerKeyDatabaseURL)
     # check to see if tempESPNPlayerRater.html exists; if not, download it
     if not os.path.exists("tempESPNPlayerUniverse.html"):
-        getESPNPlyrUniverse(url=espnPlayerRaterURL)
+        getESPNPlyrUniverse(url=espnPlayerRaterURL, headless=True)
     buildPlayerUniverse(dfKeyMap=dfKeyMap)
 
     deleteTempFiles()
