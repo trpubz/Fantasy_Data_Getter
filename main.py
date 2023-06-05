@@ -9,15 +9,18 @@ from time import sleep
 import re
 import os
 
+import bs4
+
 from src.DriverKit import DKDriverConfig
 import src.IOKit as IOKit
 from src.Globals import dirHQ
 from src.PlayerKit import Player
 
+from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 import pandas as pd
 
 rawHTML: str = ""
@@ -54,62 +57,79 @@ def getESPNPlyrUniverse(url: str, headless: bool = True):
                 WebDriverWait(sdrvr, 5).until(
                     EC.presence_of_element_located((
                         By.CSS_SELECTOR, "tbody.Table__TBODY")))
-                page = 1
-                pctRostered: float = 99.9
-                while True:
-                    WebDriverWait(sdrvr, 5).until(
-                        EC.presence_of_element_located((
-                            By.CSS_SELECTOR, "tbody.Table__TBODY")))
-                    # get the HTML of the page and parse it with BeautifulSoup
-                    soup = BeautifulSoup(sdrvr.page_source, 'lxml')
-                    # there are 2 tables on the page,
-                    # the first is the player names and the second is the player rater data
-                    tables = soup.find_all('table')[:2]
 
-                    # there are 2 header rows, shed the first one with [1:] slicing
-                    playerInfoColumns = tables[0].find_all('tr')[1:]
-                    playerRaterColumns = tables[1].find_all('tr')[1:]
-                    # add the same rows from each table to the combined table
-                    for i in range(0, len(playerInfoColumns)):
-                        if i == 0 and page == 1 and posGroup == "Batters":  # only add the headers once
-                            headers = playerInfoColumns[i].contents + playerRaterColumns[i].contents
-                            combinedHeaderRow = BeautifulSoup('', 'lxml').new_tag('thead')
-                            for header in headers:
-                                combinedHeaderRow.append(header)
-                            # print(combinedHeaderRow)
-                            combinedTable.append(combinedHeaderRow)
-                        elif i > 0:
-                            wholeRow = playerInfoColumns[i].contents + playerRaterColumns[i].contents
-                            combinedPlayerRow = BeautifulSoup('', 'lxml').new_tag('tr')
-                            for plyr in wholeRow:
-                                combinedPlayerRow.append(plyr)
-                            # updated the pctRostered variable
-                            pctRostered = float(combinedPlayerRow.select_one("div[title*='rostered']").string)
-                            combinedTable.append(combinedPlayerRow)
-                        else:
-                            continue  # if i == 0 on any other page, then skip it
-                    # go to the next page
-                    print(f"Finished processing page {page} for {posGroup}")
-                    page += 1
-                    if pctRostered < 1.1:
-                        page = 1  # reset value
-                        break
-                    else:
-                        next_button = WebDriverWait(sdrvr, 7).until(
-                                        EC.element_to_be_clickable(
-                                            (By.CSS_SELECTOR, "button.Button.Pagination__Button--next")))
-                        # next_button = sdrvr.find_element(By.CSS_SELECTOR, "button.Button.Pagination__Button--next")
-                        next_button.click()
+                combinedTable.append(parsePosGroup(sdrvr, posGroup))
+
             except Exception as e:
-                print(f"An error occurred while processing page {page}. Error message: {e}")
+                print(f"An error occurred while processing {posGroup}. Error message: {e}")
                 continue
 
     # add the combined table to the rawHTML list
     rawHTML = combinedTable.prettify()
 
     # write out the combined table to a file
-    IOKit.writeOut(fileName="tempESPNPlayerUniverse", ext=".html", content=rawHTML)
     sdrvr.close()
+    IOKit.writeOut(fileName="tempESPNPlayerUniverse", ext=".html", content=rawHTML)
+
+
+def parsePosGroup(sdrvr: webdriver, posGroup: str) -> bs4.Tag:
+    """
+    Function that parses the HTML of multiple position group pages and returns the table of player data
+    :param sdrvr: webdriver object
+    :param posGroup: "Batters" or "Pitchers"
+    :return: a combined table of player data
+    """
+    combinedTable = BeautifulSoup('', 'lxml').new_tag('table')
+    page = 1
+    pctRostered: float = 99.9
+    while pctRostered > 1.0:
+        try:
+            WebDriverWait(sdrvr, 5).until(
+                EC.presence_of_element_located((
+                    By.CSS_SELECTOR, "tbody.Table__TBODY")))
+            # get the HTML of the page and parse it with BeautifulSoup
+            soup = BeautifulSoup(sdrvr.page_source, 'lxml')
+            # there are 2 tables on the page,
+            # the first is the player names and the second is the player rater data
+            tables = soup.find_all('table')[:2]
+
+            # there are 2 header rows, shed the first one with [1:] slicing
+            playerInfoColumns = tables[0].find_all('tr')[1:]
+            playerRaterColumns = tables[1].find_all('tr')[1:]
+            # add the same rows from each table to the combined table
+            pctRostered: float
+            for i in range(0, len(playerInfoColumns)):
+                if i == 0 and page == 1 and posGroup == "Batters":  # only add the headers once
+                    headers = playerInfoColumns[i].contents + playerRaterColumns[i].contents
+                    combinedHeaderRow = BeautifulSoup('', 'lxml').new_tag('thead')
+                    for header in headers:
+                        combinedHeaderRow.append(header)
+                    # print(combinedHeaderRow)
+                    combinedTable.append(combinedHeaderRow)
+                elif i > 0:
+                    wholeRow = playerInfoColumns[i].contents + playerRaterColumns[i].contents
+                    combinedPlayerRow = BeautifulSoup('', 'lxml').new_tag('tr')
+                    for plyr in wholeRow:
+                        combinedPlayerRow.append(plyr)
+                    # updated the pctRostered variable
+                    pctRostered = float(combinedPlayerRow.select_one("div[title*='rostered']").string)
+                    combinedTable.append(combinedPlayerRow)
+                else:
+                    continue  # if i (row) == 0 on any other page, then skip it
+            # go to the next page
+            print(f"Finished processing page {page} for {posGroup}")
+            page += 1
+            # always to click to next page, pctRostered will be checked at the top of the loop
+            next_button = WebDriverWait(sdrvr, 7).until(
+                EC.element_to_be_clickable(
+                    (By.CSS_SELECTOR, "button.Button.Pagination__Button--next")))
+            next_button.click()
+
+        except Exception as e:
+            print(f"An error occurred while processing page {page}. Error message: {e}")
+            continue
+
+    return combinedTable
 
 
 def fetchPlayerKeyMap(url) -> pd.DataFrame:
@@ -119,13 +139,10 @@ def fetchPlayerKeyMap(url) -> pd.DataFrame:
     # then return the dataframe
     filename = "tempPlayerKeyMap.json"
     if os.path.isfile(filename):
-        # If it exists, read it in and return it
-        # with open(filename, 'r') as f:
-        #     data = json.load(f)
         df = pd.read_json(filename, convert_axes=False)
         # specify the columns ESPNID, IDFANGRAPHS, MLBID as strings
         df = df.astype({"ESPNID": str, "MLBID": str})
-        print(df)
+        # print(df)
         print(f"{filename} exists, returning dataframe")
         return df
     else:
@@ -134,15 +151,15 @@ def fetchPlayerKeyMap(url) -> pd.DataFrame:
         df.drop(columns=df.columns[0],
                 inplace=True)  # drop the first column, which is the html index column, this uses pandas indexing
         df.drop(index=0, inplace=True)  # drop the first row, which is NaN
-        print(f"{df.count} number of players before dropping empty values")
+        # print(f"{df.count} number of players before dropping empty values")
         df.dropna(subset=["MLBID", "ESPNID"], inplace=True)
-        print(f"{df.count} number of players after dropping empty values")
+        # print(f"{df.count} number of players after dropping empty values")
         # drop all rows that have NaN in the ESPNID column
         df = df.astype({"ESPNID": int, "MLBID": int})  # casting from float to str requires int as an intermediate step
         df = df.astype({"ESPNID": str, "MLBID": str})
         df.to_json(filename, orient="records")
-        print(df)
-        print("File pulled from the interwebs, returning dataframe")
+        # print(df)
+        print("Key Map pulled from the interwebs, returning dataframe")
         return df
 
 
@@ -154,7 +171,7 @@ def buildPlayerUniverse(dfKeyMap: pd.DataFrame):
     :return: none
     """
     os.environ['PYDEVD_WARN_SLOW_RESOLVE_TIMEOUT'] = '1.5s'
-
+    print("Building player universe")
     global rawHTML  # global keyword allows access to the global variable
     if rawHTML == "":
         rawHTML = IOKit.readIn(fileName='tempESPNPlayerUniverse', ext=".html")
@@ -181,9 +198,9 @@ def buildPlayerUniverse(dfKeyMap: pd.DataFrame):
             fangraphsID = dfKeyMap[dfKeyMap["ESPNID"] == espnID]["FANGRAPHSID"].values[0]
             savantID = dfKeyMap[dfKeyMap["ESPNID"] == espnID]["MLBID"].values[0]
             players.append(Player().from_data(playerData, espnID, fangraphsID, savantID))
-        except Exception as e:
-            print(f"An error occurred while processing {playerData[1].get_text(strip=True)}. \
-                  Most likely, the player is not in the key map. Error message: {e}")
+        except IndexError as ie:
+            print(f"An error occurred while processing {playerData[1].get_text(strip=True)}. \n"
+                  f"Most likely, the player is not in the key map. Error message: {ie}")
             continue
 
     print(f"Finished building player universe.  {len(players)} players found.")
@@ -203,17 +220,23 @@ def deleteTempFiles():
             os.remove(file)
 
 
-if __name__ == '__main__':
+def main():
     leagueID = "10998"
     espnPlayerRaterURL = "https://fantasy.espn.com/baseball/playerrater?leagueId=" + leagueID
     playerKeyDatabaseURL = "https://docs.google.com/spreadsheets/d/e/2PACX" \
                            "-1vSEw6LWoxJrrBSFY39wA_PxSW5SG_t3J7dJT3JsP2DpMF5vWY6HJY071d8iNIttYDnArfQXg-oY_Q6I/pubhtml" \
                            "?gid=0&single=true"
 
+    print("\nRunning Fantasy Data Getter")
     dfKeyMap = fetchPlayerKeyMap(url=playerKeyDatabaseURL)
     # check to see if tempESPNPlayerRater.html exists; if not, download it
     if not os.path.exists("tempESPNPlayerUniverse.html"):
         getESPNPlyrUniverse(url=espnPlayerRaterURL, headless=True)
+
     buildPlayerUniverse(dfKeyMap=dfKeyMap)
 
     deleteTempFiles()
+
+
+if __name__ == '__main__':
+    main()
