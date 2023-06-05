@@ -1,8 +1,8 @@
 """
-Automates the gathering of useful Fantasy Baseball Player Player Data.  
+Automates the gathering of useful Fantasy Baseball Player Data.
 Exclusively the ESPN Fantasy Universe from the league's Player Rater page.
-v1.4
-modified: 23 MAY 2023
+v1.5.0
+modified: 04 JUN 2023
 by pubins.taylor
 """
 from time import sleep
