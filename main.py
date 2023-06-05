@@ -82,9 +82,9 @@ def parsePosGroup(sdrvr: webdriver, posGroup: str) -> bs4.Tag:
     combinedTable = BeautifulSoup('', 'lxml').new_tag('table')
     page = 1
     pctRostered: float = 99.9
-    while pctRostered > 1.0:
+    while pctRostered > 1.0 or page < 3:
         try:
-            WebDriverWait(sdrvr, 5).until(
+            WebDriverWait(sdrvr, 7).until(
                 EC.presence_of_element_located((
                     By.CSS_SELECTOR, "tbody.Table__TBODY")))
             # get the HTML of the page and parse it with BeautifulSoup
@@ -129,6 +129,10 @@ def parsePosGroup(sdrvr: webdriver, posGroup: str) -> bs4.Tag:
             print(f"An error occurred while processing page {page}. Error message: {e}")
             continue
 
+    if page < 4:
+        print(f"Only {page - 1} pages were processed for {posGroup}. \n should check failure")
+
+    print(f"The lowest %Rostered for {posGroup} group was {pctRostered}")
     return combinedTable
 
 
