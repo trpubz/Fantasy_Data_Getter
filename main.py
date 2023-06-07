@@ -1,8 +1,8 @@
 """
 Automates the gathering of useful Fantasy Baseball Player Data.
 Exclusively the ESPN Fantasy Universe from the league's Player Rater page.
-v1.5.0
-modified: 04 JUN 2023
+v 1.6.0
+modified: 07 JUN 2023
 by pubins.taylor
 """
 from time import sleep
@@ -20,7 +20,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup
 import pandas as pd
 
 rawHTML: str = ""
@@ -38,7 +38,6 @@ def getESPNPlyrUniverse(url: str, headless: bool = True):
     sdrvr.get(url)
     sdrvr.implicitly_wait(10)
 
-    global rawHTML  # bring in global variable
     # sort the page by %Rostered
     pctRosteredButton = sdrvr.find_element(By.XPATH, "//th[div[span[contains(text(),'%ROST')]]]")
     pctRosteredButton.click()
@@ -53,20 +52,23 @@ def getESPNPlyrUniverse(url: str, headless: bool = True):
         if posGroup == "Batters" or posGroup == "Pitchers":
             try:
                 button.click()
+                sleep(1)
                 # give the page time to load
                 WebDriverWait(sdrvr, 5).until(
                     EC.presence_of_element_located((
                         By.CSS_SELECTOR, "tbody.Table__TBODY")))
+                print(f"Processing {posGroup} group")
 
                 combinedTable.append(parsePosGroup(sdrvr, posGroup))
 
             except Exception as e:
-                print(f"An error occurred while processing {posGroup}. Error message: {e}")
+                print(f"An error occurred in getESPNPlyrUniverse while processing {posGroup}. Error message: {e}")
                 continue
 
     # add the combined table to the rawHTML list
+    global rawHTML  # bring in global variable
     rawHTML = combinedTable.prettify()
-
+    assert len(rawHTML) > 0, "rawHTML is empty, run again"
     # write out the combined table to a file
     sdrvr.close()
     IOKit.writeOut(fileName="tempESPNPlayerUniverse", ext=".html", content=rawHTML)
@@ -120,9 +122,12 @@ def parsePosGroup(sdrvr: webdriver, posGroup: str) -> bs4.Tag:
             print(f"Finished processing page {page} for {posGroup}")
             page += 1
             # always to click to next page, pctRostered will be checked at the top of the loop
+            sleep(1)
             next_button = WebDriverWait(sdrvr, 7).until(
                 EC.element_to_be_clickable(
                     (By.CSS_SELECTOR, "button.Button.Pagination__Button--next")))
+            # scroll button into view before clicking
+            # ActionChains(sdrvr).move_to_element(next_button).perform()
             next_button.click()
 
         except Exception as e:
@@ -133,6 +138,9 @@ def parsePosGroup(sdrvr: webdriver, posGroup: str) -> bs4.Tag:
         print(f"Only {page - 1} pages were processed for {posGroup}. \n should check failure")
 
     print(f"The lowest %Rostered for {posGroup} group was {pctRostered}")
+    print(f"A total of {page - 1} pages were processed for {posGroup} group. \n" +
+          f"{len(combinedTable)} players added")
+    assert len(combinedTable) > 0, "No players were added to the combined table"
     return combinedTable
 
 
@@ -175,7 +183,7 @@ def buildPlayerUniverse(dfKeyMap: pd.DataFrame):
     :return: none
     """
     os.environ['PYDEVD_WARN_SLOW_RESOLVE_TIMEOUT'] = '1.5s'
-    print("Building player universe")
+    print("Building player universe from raw HTML")
     global rawHTML  # global keyword allows access to the global variable
     if rawHTML == "":
         rawHTML = IOKit.readIn(fileName='tempESPNPlayerUniverse', ext=".html")
@@ -231,15 +239,17 @@ def main():
                            "-1vSEw6LWoxJrrBSFY39wA_PxSW5SG_t3J7dJT3JsP2DpMF5vWY6HJY071d8iNIttYDnArfQXg-oY_Q6I/pubhtml" \
                            "?gid=0&single=true"
 
-    print("\nRunning Fantasy Data Getter")
+    print("\n---Running Fantasy Data Getter---\n")
     dfKeyMap = fetchPlayerKeyMap(url=playerKeyDatabaseURL)
     # check to see if tempESPNPlayerRater.html exists; if not, download it
     if not os.path.exists("tempESPNPlayerUniverse.html"):
-        getESPNPlyrUniverse(url=espnPlayerRaterURL, headless=True)
+        getESPNPlyrUniverse(url=espnPlayerRaterURL, headless=False)
 
     buildPlayerUniverse(dfKeyMap=dfKeyMap)
 
     deleteTempFiles()
+
+    print("\n---Finished Fantasy Data Getter---")
 
 
 if __name__ == '__main__':
