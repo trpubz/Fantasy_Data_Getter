@@ -13,7 +13,7 @@ def writeOut(dir: str = "", fileName: str = "", ext: str = "", content: object =
     if isinstance(content[0], Player):
         content = [x.__dict__ for x in content] # serialize Player objects
         with open(os.path.join(dir, (fileName + ext)), mode='w+', encoding='utf-8') as f:
-            json.dump(content, f, indent=4)
+            json.dump(content, f, indent=2)
             print(f'{fileName}{ext} successfully saved to {getDir(dir)}')
             f.close()
     else:
