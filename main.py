@@ -129,6 +129,7 @@ def parsePosGroup(sdrvr: webdriver, posGroup: str) -> bs4.Tag:
             # scroll button into view before clicking
             # ActionChains(sdrvr).move_to_element(next_button).perform()
             next_button.click()
+            sleep(1)
 
         except Exception as e:
             print(f"An error occurred while processing page {page}. Error message: {e}")
@@ -243,7 +244,7 @@ def main():
     dfKeyMap = fetchPlayerKeyMap(url=playerKeyDatabaseURL)
     # check to see if tempESPNPlayerRater.html exists; if not, download it
     if not os.path.exists("tempESPNPlayerUniverse.html"):
-        getESPNPlyrUniverse(url=espnPlayerRaterURL, headless=False)
+        getESPNPlyrUniverse(url=espnPlayerRaterURL, headless=True)
 
     buildPlayerUniverse(dfKeyMap=dfKeyMap)
 

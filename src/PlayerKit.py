@@ -7,11 +7,13 @@ date modified: 08 JUN 2023
 """
 import re
 
+import bs4
 from bs4 import BeautifulSoup
 
 
 # a class that represents a player, the attributes need to include the following: name, position dictionary,
 # ESPN ID, Fangraphs ID, team, age
+
 
 class Player:
     def __init__(self, name="", team="", ovr: int = 0, positions=[], owner="", playerRater={}, espnID="",
@@ -37,64 +39,71 @@ class Player:
         # if the owner is not listed, then the player is a free agent and the splitting the text will drop the waiver
         # date and return only WA
         owner = data[2].get_text(strip=True).split(" ")[0]
-        playerRater = {}
-        for d in data:
-            cat = ""
-            try:
-                cat = d.find("div")["title"]
-            except KeyError:  # indicates no title attribute is found
-                continue
-            if not any(p for p in positions if "SP" in p or "RP" in p):
-                match cat:
-                    case "Runs Scored":
-                        playerRater.update({"R": float(d.get_text(strip=True))})
-                        continue
-                    case "Home Runs":
-                        playerRater.update({"HR": float(d.get_text(strip=True))})
-                        continue
-                    case "Runs Batted In":
-                        playerRater.update({"RBI": float(d.get_text(strip=True))})
-                        continue
-                    case "Net Stolen Bases":
-                        playerRater.update({"SBN": float(d.get_text(strip=True))})
-                        continue
-                    case "On Base Pct":
-                        playerRater.update({"OBP": float(d.get_text(strip=True))})
-                        continue
-                    case "Slugging Pct":
-                        playerRater.update({"SLG": float(d.get_text(strip=True))})
-                        continue
-            else:
-                match cat:
-                    case "Innings Pitched":
-                        playerRater.update({"IP": float(d.get_text(strip=True))})
-                        continue
-                    case "Quality Starts":
-                        playerRater.update({"QS": float(d.get_text(strip=True))})
-                        continue
-                    case "Earned Run Average":
-                        playerRater.update({"ERA": float(d.get_text(strip=True))})
-                        continue
-                    case "Walks plus Hits Per Innings Pitched":
-                        playerRater.update({"WHIP": float(d.get_text(strip=True))})
-                        continue
-                    case "Strikeouts per 9 Innings":
-                        playerRater.update({"K/9": float(d.get_text(strip=True))})
-                        continue
-                    case "Saves Plus Holds":
-                        playerRater.update({"SVHD": float(d.get_text(strip=True))})
-                        continue
-            match cat:
-                case _ if re.match(".*rostered.*", cat):
-                    playerRater.update({"%ROST": float(d.get_text(strip=True))})
-                case _ if re.match(".*Rating.*", cat):
-                    try:
-                        playerRater.update({"PRTR": float(d.get_text(strip=True))})
-                    except ValueError:  # will raise if the player rater is "--"
-                        playerRater.update({"PRTR": 0.0})
+        playerRater = addPlayerRaterData(data[3:], positions)
 
         return cls(name=name, ovr=ovr, positions=positions, team=team, owner=owner, playerRater=playerRater,
                    espnID=espnID, fangraphsID=fangraphsID, savantID=savantID)
+
+
+def addPlayerRaterData(data: list, positions: list) -> dict[str: float]:
+    playerRater = {}
+    for d in data:
+        cat = ""
+        try:
+            cat = d.find("div")["title"]
+        except KeyError:  # indicates no title attribute is found
+            continue
+        if any(p for p in positions if "SP" not in p or "RP" not in p):
+            match cat:
+                case "Runs Scored":
+                    playerRater.update({"R": float(d.get_text(strip=True))})
+                    continue
+                case "Home Runs":
+                    playerRater.update({"HR": float(d.get_text(strip=True))})
+                    continue
+                case "Runs Batted In":
+                    playerRater.update({"RBI": float(d.get_text(strip=True))})
+                    continue
+                case "Net Stolen Bases":
+                    playerRater.update({"SBN": float(d.get_text(strip=True))})
+                    continue
+                case "On Base Pct":
+                    playerRater.update({"OBP": float(d.get_text(strip=True))})
+                    continue
+                case "Slugging Pct":
+                    playerRater.update({"SLG": float(d.get_text(strip=True))})
+                    continue
+        if any(p for p in positions if "SP" in p or "RP" in p):
+            match cat:
+                case "Innings Pitched":
+                    playerRater.update({"IP": float(d.get_text(strip=True))})
+                    continue
+                case "Quality Starts":
+                    playerRater.update({"QS": float(d.get_text(strip=True))})
+                    continue
+                case "Earned Run Average":
+                    playerRater.update({"ERA": float(d.get_text(strip=True))})
+                    continue
+                case "Walks plus Hits Per Innings Pitched":
+                    playerRater.update({"WHIP": float(d.get_text(strip=True))})
+                    continue
+                case "Strikeouts per 9 Innings":
+                    playerRater.update({"K/9": float(d.get_text(strip=True))})
+                    continue
+                case "Saves Plus Holds":
+                    playerRater.update({"SVHD": float(d.get_text(strip=True))})
+                    continue
+        match cat:
+            case _ if re.match(".*rostered.*", cat):
+                playerRater.update({"%ROST": float(d.get_text(strip=True))})
+            case _ if re.match(".*Rating.*", cat):
+                try:
+                    playerRater.update({"PRTR": float(d.get_text(strip=True))})
+                except ValueError:  # will raise if the player rater is "--"
+                    playerRater.update({"PRTR": 0.0})
+
+    return playerRater
+
 
     def to_dict(self):
         return {
