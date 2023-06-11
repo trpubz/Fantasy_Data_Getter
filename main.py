@@ -198,7 +198,8 @@ def buildPlayerUniverse(dfKeyMap: pd.DataFrame):
     for player in playerRows:  # first row is designated by the "th" tag, so no need to skip it here
         playerData = player.find_all("td")
         # location ID can be in either the src or data-src attribute
-        idLoc: str = playerData[1].find("img").get("src") or playerData[1].find("img").get("data-src")
+        # if both are present, then data-src is the one to use
+        idLoc: str = playerData[1].find("img").get("data-src") or playerData[1].find("img").get("src")
         try:
             espnID = re.findall(r'full/(\d+)\.png', idLoc)[0]
         except Exception as e:
