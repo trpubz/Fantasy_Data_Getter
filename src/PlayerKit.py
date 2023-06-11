@@ -44,6 +44,19 @@ class Player:
         return cls(name=name, ovr=ovr, positions=positions, team=team, owner=owner, playerRater=playerRater,
                    espnID=espnID, fangraphsID=fangraphsID, savantID=savantID)
 
+    def to_dict(self):
+        return {
+            '_name': self._name,
+            'team': self.team,
+            'ovr': self.ovr,
+            'positions': self.positions,
+            'owner': self.owner,
+            'playerRater': self.playerRater,
+            'espnID': self.espnID,
+            'fangraphsID': self.fangraphsID,
+            'savantID': self.savantID
+        }
+
 
 def addPlayerRaterData(data: list, positions: list) -> dict[str: float]:
     playerRater = {}
@@ -103,17 +116,3 @@ def addPlayerRaterData(data: list, positions: list) -> dict[str: float]:
                     playerRater.update({"PRTR": 0.0})
 
     return playerRater
-
-
-    def to_dict(self):
-        return {
-            '_name': self._name,
-            'team': self.team,
-            'ovr': self.ovr,
-            'positions': self.positions,
-            'owner': self.owner,
-            'playerRater': self.playerRater,
-            'espnID': self.espnID,
-            'fangraphsID': self.fangraphsID,
-            'savantID': self.savantID
-        }
