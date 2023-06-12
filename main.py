@@ -147,9 +147,9 @@ def parsePosGroup(sdrvr: webdriver, posGroup: str) -> bs4.Tag:
 
 
 def fetchPlayerKeyMap() -> pd.DataFrame:
-    # check to see if tempPlayerKeyMap.json exists before proceeding
+    # check to see if KeyMap.json exists before proceeding
     # if it does, then read it in and return it
-    # if it doesn't, then fetch the data and write it out to a json file
+    # if it doesn't, call subprocess and write it out to a json file
     # then return the dataframe
     filename = "mtblKeyMap.json"
     try:
