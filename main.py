@@ -59,7 +59,8 @@ def getESPNPlyrUniverse(url: str, headless: bool = True):
                     EC.presence_of_element_located((
                         By.CSS_SELECTOR, "tbody.Table__TBODY")))
                 print(f"Processing {posGroup} group")
-
+                # TODO: add logic to make sure the appended table is different than the previous one,
+                #  otherwise, shed and move forward
                 combinedTable.append(parsePosGroup(sdrvr, posGroup))
 
             except Exception as e:
@@ -194,18 +195,19 @@ def buildPlayerUniverse(dfKeyMap: pd.DataFrame):
         try:
             espnID = re.findall(r'full/(\d+)\.png', idLoc)[0]
         except Exception as e:
-            print(f"cannot find espnID for {playerData[1].get_text(strip=True)}.  Error message: {e}")
+            print(f"cannot find espnID in html for {playerData[1].get_text(strip=True)}.  Error message: {e}")
             continue
         # shohei player id is 39382
         try:
-            # TODO: add BREFID to the player object if present in the key map; may need to refactor the
-            #  Fangraphs_Data_Getter
             fangraphsID = dfKeyMap[dfKeyMap["ESPNID"] == espnID]["FANGRAPHSID"].values[0]
             savantID = dfKeyMap[dfKeyMap["ESPNID"] == espnID]["MLBID"].values[0]
             players.append(Player().from_data(playerData, espnID, fangraphsID, savantID))
         except IndexError as ie:
-            print(f"An error occurred while processing {playerData[1].get_text(strip=True)}. \n"
-                  f"Most likely, the player is not in the key map. Error message: {ie}")
+            print(f"Error occurred while processing {playerData[1].get_text(strip=True)}: {espnID}. \n"
+                  f"   No matching player found in the key map")
+            pctRostered = float(playerData[16].get_text(strip=True))
+            if pctRostered > 2.0:
+                print(f"   player is rostered {pctRostered} of leagues, update/add player to key map!")
             continue
 
     print(f"Finished building player universe.  {len(players)} players found.")
@@ -234,11 +236,11 @@ def main():
     dfKeyMap = fetchPlayerKeyMap()
     # check to see if tempESPNPlayerRater.html exists; if not, download it
     if not os.path.exists("tempESPNPlayerUniverse.html"):
-        getESPNPlyrUniverse(url=espnPlayerRaterURL, headless=True)
+        getESPNPlyrUniverse(url=espnPlayerRaterURL, headless=False)
 
     buildPlayerUniverse(dfKeyMap=dfKeyMap)
 
-    deleteTempFiles()
+    # deleteTempFiles()
 
     print("\n---Finished Fantasy Data Getter---")
 
