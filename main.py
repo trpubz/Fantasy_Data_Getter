@@ -59,8 +59,7 @@ def getESPNPlyrUniverse(url: str, headless: bool = True):
                     EC.presence_of_element_located((
                         By.CSS_SELECTOR, "tbody.Table__TBODY")))
                 print(f"Processing {posGroup} group")
-                # TODO: add logic to make sure the appended table is different than the previous one,
-                #  otherwise, shed and move forward
+
                 combinedTable.append(parsePosGroup(sdrvr, posGroup))
 
             except Exception as e:
@@ -86,6 +85,7 @@ def parsePosGroup(sdrvr: webdriver, posGroup: str) -> bs4.Tag:
     combinedTable = BeautifulSoup('', 'lxml').new_tag('table')
     page = 1
     pctRostered: float = 99.9
+    tableRows: list[str] = []
     while pctRostered > 1.0 or page < 3:
         try:
             WebDriverWait(sdrvr, 7).until(
@@ -117,21 +117,23 @@ def parsePosGroup(sdrvr: webdriver, posGroup: str) -> bs4.Tag:
                         combinedPlayerRow.append(plyr)
                     # updated the pctRostered variable
                     pctRostered = float(combinedPlayerRow.select_one("div[title*='rostered']").string)
-                    combinedTable.append(combinedPlayerRow)
+                    if not isDuplicateRow(combinedPlayerRow, tableRows):
+                        tableRows.append(str(combinedPlayerRow))
+                        combinedTable.append(combinedPlayerRow)
                 else:
                     continue  # if i (row) == 0 on any other page, then skip it
             # go to the next page
             print(f"Finished processing page {page} for {posGroup}")
             page += 1
             # always to click to next page, pctRostered will be checked at the top of the loop
-            sleep(1)
+            sleep(.3)
             next_button = WebDriverWait(sdrvr, 7).until(
                 EC.element_to_be_clickable(
                     (By.CSS_SELECTOR, "button.Button.Pagination__Button--next")))
             # scroll button into view before clicking
             # ActionChains(sdrvr).move_to_element(next_button).perform()
             next_button.click()
-            sleep(1)
+            sleep(1.6)
 
         except Exception as e:
             print(f"An error occurred while processing page {page}. Error message: {e}")
@@ -145,6 +147,28 @@ def parsePosGroup(sdrvr: webdriver, posGroup: str) -> bs4.Tag:
           f"{len(combinedTable)} players added")
     assert len(combinedTable) > 0, "No players were added to the combined table"
     return combinedTable
+
+
+def isDuplicateRow(row: bs4.Tag, tableRows: list[str]) -> bool:
+    """
+    Function that checks to see if a row is already in the tableRows list
+    :param row: a row of player data
+    :param tableRows: a list of rows of player data
+    :return: True if the row is already in the list, False if it is not
+    """
+    idLoc: str = row.find("img").get("data-src") or row.find("img").get("src")
+    espnID = re.findall(r'full/(\d+)\.png', idLoc)[0]
+    if str(row) not in tableRows:
+        return False
+    else:
+        # check to make sure Shohei Ohtani is not in the table more than twice
+        shoheis = filter(lambda x: "39382" in x, tableRows)
+        listShoheis = list(shoheis)
+        if espnID == "39382" and len(listShoheis) < 2:
+            return False
+        else:
+            print("duplicate row found, skipping table")
+            return True
 
 
 def fetchPlayerKeyMap() -> pd.DataFrame:
@@ -240,7 +264,7 @@ def main():
 
     buildPlayerUniverse(dfKeyMap=dfKeyMap)
 
-    deleteTempFiles()
+    # deleteTempFiles()
 
     print("\n---Finished Fantasy Data Getter---")
 
