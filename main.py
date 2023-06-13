@@ -240,7 +240,7 @@ def main():
 
     buildPlayerUniverse(dfKeyMap=dfKeyMap)
 
-    # deleteTempFiles()
+    deleteTempFiles()
 
     print("\n---Finished Fantasy Data Getter---")
 
