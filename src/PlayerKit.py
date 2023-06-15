@@ -34,6 +34,10 @@ class Player:
         ovr = int(data[0].text)
         regexPos = re.compile(".*playerpos.*")
         positions: list = data[1].find("span", class_=regexPos).get_text(strip=True).split(", ")
+        # sometimes position players can have RP stats when their team gets blown up, so this removes RP from the
+        # position player
+        if len(positions) > 1 and "RP" in positions and "SP" not in positions:
+            positions.remove("RP")
         regexTm = re.compile(".*playerteam.*")
         team = data[1].find(class_=regexTm).get_text(strip=True).upper()
         # if the owner is not listed, then the player is a free agent and the splitting the text will drop the waiver
