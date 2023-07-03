@@ -1,14 +1,15 @@
 """
 Automates the gathering of useful Fantasy Baseball Player Data.
 Exclusively the ESPN Fantasy Universe from the league's Player Rater page.
-v 1.6.0
-modified: 07 JUN 2023
+v 1.6.1
+modified: 2 JUL 2023
 by pubins.taylor
 """
 from time import sleep
 import re
 import os
 import subprocess
+import logging
 
 import bs4
 
@@ -24,6 +25,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 import pandas as pd
 
+logging.basicConfig(level=logging.INFO)  # change to level=logging.INFO when done debugging
 rawHTML: str = ""
 players: list[Player] = []
 
@@ -51,20 +53,23 @@ def getESPNPlyrUniverse(url: str, headless: bool = True):
     for button in position_buttons:
         posGroup = button.text
         if posGroup == "Batters" or posGroup == "Pitchers":
-            try:
-                button.click()
-                sleep(1)
-                # give the page time to load
-                WebDriverWait(sdrvr, 5).until(
-                    EC.presence_of_element_located((
-                        By.CSS_SELECTOR, "tbody.Table__TBODY")))
-                print(f"Processing {posGroup} group")
-
-                combinedTable.append(parsePosGroup(sdrvr, posGroup))
-
-            except Exception as e:
-                print(f"An error occurred in getESPNPlyrUniverse while processing {posGroup}. Error message: {e}")
-                continue
+            while True:
+                try:
+                    if "checked" not in button.get_attribute("class"):
+                        button.click()
+                    sleep(1.6)
+                    print(f"Processing {posGroup} group")
+                    assert "checked" in button.get_attribute("class")
+                    # proper button is selected, proceed with parsing of group
+                    combinedTable.append(parsePosGroup(sdrvr, posGroup))
+                    break
+                except AssertionError:
+                    print(f"{posGroup} button is not selected when it should be--reattempting selection")
+                    # continue will force button click attempt
+                    continue
+                except Exception as e:
+                    print(f"An error occurred in getESPNPlyrUniverse while processing {posGroup}. Error message: {e}")
+                    continue
 
     # add the combined table to the rawHTML list
     global rawHTML  # bring in global variable
@@ -80,99 +85,109 @@ def parsePosGroup(sdrvr: webdriver, posGroup: str) -> bs4.Tag:
     Function that parses the HTML of multiple position group pages and returns the table of player data
     :param sdrvr: webdriver object
     :param posGroup: "Batters" or "Pitchers"
-    :return: a combined table of player data
+    :return: a combined table of player data in HTML format with <td> tags
     """
     combinedTable = BeautifulSoup('', 'lxml').new_tag('table')
     page = 1
     pctRostered: float = 99.9
-    tableRows: list[str] = []
-    while pctRostered > 1.0 or page < 3:
+
+    while pctRostered > 1.0:
         try:
             WebDriverWait(sdrvr, 7).until(
-                EC.presence_of_element_located((
+                EC.visibility_of_element_located((
                     By.CSS_SELECTOR, "tbody.Table__TBODY")))
+            next_button = WebDriverWait(sdrvr, 7).until(
+                EC.element_to_be_clickable(
+                    (By.CSS_SELECTOR, "button.Button.Pagination__Button--next")))
             # get the HTML of the page and parse it with BeautifulSoup
             soup = BeautifulSoup(sdrvr.page_source, 'lxml')
-            # there are 2 tables on the page,
-            # the first is the player names and the second is the player rater data
-            tables = soup.find_all('table')[:2]
-
-            # there are 2 header rows, shed the first one with [1:] slicing
-            playerInfoColumns = tables[0].find_all('tr')[1:]
-            playerRaterColumns = tables[1].find_all('tr')[1:]
-            # add the same rows from each table to the combined table
-            pctRostered: float
-            for i in range(0, len(playerInfoColumns)):
-                if i == 0 and page == 1 and posGroup == "Batters":  # only add the headers once
-                    headers = playerInfoColumns[i].contents + playerRaterColumns[i].contents
-                    combinedHeaderRow = BeautifulSoup('', 'lxml').new_tag('thead')
-                    for header in headers:
-                        combinedHeaderRow.append(header)
-                    # print(combinedHeaderRow)
-                    combinedTable.append(combinedHeaderRow)
-                elif i > 0:
-                    wholeRow = playerInfoColumns[i].contents + playerRaterColumns[i].contents
-                    combinedPlayerRow = BeautifulSoup('', 'lxml').new_tag('tr')
-                    for plyr in wholeRow:
-                        combinedPlayerRow.append(plyr)
-                    # updated the pctRostered variable
-                    pctRostered = float(combinedPlayerRow.select_one("div[title*='rostered']").string)
-                    if not isDuplicateRow(combinedPlayerRow, tableRows):
-                        tableRows.append(str(combinedPlayerRow))
-                        combinedTable.append(combinedPlayerRow)
-                else:
-                    continue  # if i (row) == 0 on any other page, then skip it
+            # call function that parses the HTML and returns a tuple of the predicate and the data
+            pctRostered, tableRows = parsePage(soup, page, posGroup)
+            if areDuplicateRows(combinedTable, tableRows):
+                logging.info("rows are duplicated, refresh or go to next page")
+                next_button.click()
+                continue  # jump back to top of while loop
+            else:
+                for row in tableRows:
+                    combinedTable.append(row)
+            assert pctRostered > 1.3
             # go to the next page
             print(f"Finished processing page {page} for {posGroup}")
             page += 1
             # always to click to next page, pctRostered will be checked at the top of the loop
             sleep(.3)
-            next_button = WebDriverWait(sdrvr, 7).until(
-                EC.element_to_be_clickable(
-                    (By.CSS_SELECTOR, "button.Button.Pagination__Button--next")))
             # scroll button into view before clicking
             # ActionChains(sdrvr).move_to_element(next_button).perform()
             next_button.click()
             sleep(1.6)
-
+        except AssertionError:
+            break
         except Exception as e:
             print(f"An error occurred while processing page {page}. Error message: {e}")
             continue
 
     if page < 4:
         print(f"Only {page - 1} pages were processed for {posGroup}. \n should check failure")
-
     print(f"The lowest %Rostered for {posGroup} group was {pctRostered}")
     print(f"A total of {page - 1} pages were processed for {posGroup} group. \n" +
           f"{len(combinedTable)} players added")
     assert len(combinedTable) > 0, "No players were added to the combined table"
+
     return combinedTable
 
 
-def isDuplicateRow(row: bs4.Tag, tableRows: list[str]) -> bool:
+def parsePage(soup: bs4.BeautifulSoup, page: int, posGroup: str) -> (float, [bs4.Tag]):
+    # there are 2 tables on the page,
+    # the first is the player names and the second is the player rater data
+    tables = soup.find_all('table')[:2]
+    # there are 2 header rows, shed the first one with [1:] slicing
+    playerInfoColumns = tables[0].find_all('tr')[1:]
+    playerRaterColumns = tables[1].find_all('tr')[1:]
+    # add the same rows from each table to the combined table
+    pctRostered: float = 0.0
+    rows: [bs4.Tag] = []
+
+    for i in range(0, len(playerInfoColumns)):
+        if i == 0 and page == 1 and posGroup == "Batters":  # only add the headers once
+            headers = playerInfoColumns[i].contents + playerRaterColumns[i].contents
+            combinedHeaderRow = BeautifulSoup('', 'lxml').new_tag('thead')
+            for header in headers:
+                combinedHeaderRow.append(header)
+            rows.append(combinedHeaderRow)
+        elif i > 0:
+            wholeRow = playerInfoColumns[i].contents + playerRaterColumns[i].contents
+            combinedPlayerRow = BeautifulSoup('', 'lxml').new_tag('tr')
+            for td in wholeRow:
+                combinedPlayerRow.append(td)
+            # updated the pctRostered variable
+            pctRostered = float(combinedPlayerRow.select_one("div[title*='rostered']").string)
+            try:
+                assert pctRostered > 1.3
+                rows.append(combinedPlayerRow)
+            except AssertionError:  # if pctRostered drops below predicate then
+                break
+        else:
+            continue  # if i (rows) == 0 on any other page, then skip it
+
+    return pctRostered, rows
+
+
+def areDuplicateRows(combinedTable: bs4.Tag, newRows: [bs4.Tag]) -> bool:
     """
-    Function that checks to see if a row is already in the tableRows list
-    :param row: a row of player data
-    :param tableRows: a list of rows of player data
+    Function that checks to see if new rows are already in the combinedTable
+    :param combinedTable: a bs4 Tag of the combined table
+    :param newRows: a list of rows of player data
     :return: True if the row is already in the list, False if it is not
     """
-    idLoc: str = row.find("img").get("data-src") or row.find("img").get("src")
-    espnID = re.findall(r'full/(\d+)\.png', idLoc)[0]
-    if str(row) not in tableRows:
-        return False
+    strNewRows = "".join(map(str, newRows))
+    if strNewRows in str(combinedTable):
+        return True
     else:
-        # check to make sure Shohei Ohtani is not in the table more than twice
-        shoheis = filter(lambda x: "39382" in x, tableRows)
-        listShoheis = list(shoheis)
-        if espnID == "39382" and len(listShoheis) < 2:
-            return False
-        else:
-            print("duplicate row found, skipping table")
-            return True
+        return False
 
 
 def fetchPlayerKeyMap() -> pd.DataFrame:
-    # check to see if KeyMap.json exists before proceeding
+    # check to see if mtblKeyMap.json exists before proceeding
     # if it does, then read it in and return it
     # if it doesn't, call subprocess and write it out to a json file
     # then return the dataframe
