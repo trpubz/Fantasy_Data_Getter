@@ -33,10 +33,11 @@ def fetchPlayerKeyMap() -> pd.DataFrame:
         df = pd.read_json(keyMap, convert_axes=False)
         # specify the columns ESPNID, IDFANGRAPHS, MLBID as strings
         df = df.astype({"ESPNID": str, "MLBID": str})
-        # print(df)
-        print(f"found {filename}, returning dataframe")
+        # # print(df)
+        # print(f"found {filename}, returning dataframe")
         return df
     except FileNotFoundError:
+        # TODO: import this module from package
         # fetch the data with the MTBL_KeyMap script
         key_map_dir = "/Users/Shared/BaseballHQ/tools/MTBL_KeyMap/"
         subprocess.run([key_map_dir + ".venv/bin/python3",
@@ -52,7 +53,7 @@ def buildPlayerUniverse(dfKeyMap: pd.DataFrame):
     :return: none
     """
     os.environ['PYDEVD_WARN_SLOW_RESOLVE_TIMEOUT'] = '1.5s'
-    print("Building player universe from raw HTML")
+    # print("Building player universe from raw HTML")
     global rawHTML  # global keyword allows access to the global variable
     if rawHTML == "":
         rawHTML = IOKit.readIn(fileName='tempESPNPlayerUniverse', ext=".html")
@@ -86,7 +87,7 @@ def buildPlayerUniverse(dfKeyMap: pd.DataFrame):
                 print(f"   player is rostered {pctRostered} of leagues, update/add player to key map!")
             continue
 
-    print(f"Finished building player universe.  {len(players)} players found.")
+    # print(f"Finished building player universe.  {len(players)} players found.")
 
     # save the player universe to a json file
     IOKit.writeOut(dir=dirHQ, fileName="espnPlayerUniverse", ext=".json", content=players)
@@ -107,7 +108,7 @@ def main():
     leagueID = "10998"
     espnPlayerRaterURL = "https://fantasy.espn.com/baseball/playerrater?leagueId=" + leagueID
 
-    print("\n---Running Fantasy Data Getter---\n")
+    # print("\n---Running Fantasy Data Getter---\n")
 
     dfKeyMap = fetchPlayerKeyMap()
     # check to see if tempESPNPlayerRater.html exists; if not, download it
@@ -119,7 +120,7 @@ def main():
 
     deleteTempFiles()
 
-    print("\n---Finished Fantasy Data Getter---")
+    # print("\n---Finished Fantasy Data Getter---")
 
 
 if __name__ == '__main__':

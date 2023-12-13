@@ -20,7 +20,7 @@ def writeOut(dir: str = "", fileName: str = "", ext: str = "", content: object =
         with open(os.path.join(dir, (fileName + ext)), mode='w+', encoding='utf-8') as f:
             # print(content, file=f)
             f.write(content)
-            print(f'{fileName}{ext} successfully saved to {getDir(dir)}')
+            # print(f'{fileName}{ext} successfully saved to {getDir(dir)}')
             f.close()
 
 
@@ -38,7 +38,7 @@ def renameFile(dir: str, fExt: str, downloadedFile: str, newFileName: str):
             newDownloadPath = dir + newFileName + ".csv"
             os.rename(f, newDownloadPath)
             # locCSVs.append(newDownloadPath)
-            print(f"successfully downloaded {newFileName} to {getDir(dir)}")
+            # print(f"successfully downloaded {newFileName} to {getDir(dir)}")
             return
         
 

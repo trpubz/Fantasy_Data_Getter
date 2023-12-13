@@ -52,7 +52,7 @@ def getESPNPlyrUniverse(url: str, headless: bool = True):
                 WebDriverWait(sdrvr, 5).until(
                     lambda _: expectedTableLoaded(initialStatePlayerTable, sdrvr)
                 )
-                print(f"Processing {posGroup} group")
+                # print(f"Processing {posGroup} group")
 
                 combinedTable.append(parsePosGroup(sdrvr, posGroup))
 
@@ -121,7 +121,7 @@ def parsePosGroup(sdrvr: webdriver, posGroup: str) -> Tag:
                 else:
                     continue  # if i (row) == 0 on any other page, then skip it
             # go to the next page
-            print(f"Finished processing page {page} for {posGroup}")
+            # print(f"Finished processing page {page} for {posGroup}")
             page += 1
             # always to click to next page, pctRostered will be checked at the top of the loop
             sleep(.3)
@@ -138,11 +138,12 @@ def parsePosGroup(sdrvr: webdriver, posGroup: str) -> Tag:
             continue
 
     if page < 4:
-        print(f"Only {page - 1} pages were processed for {posGroup}. \n should check failure")
+        # print(f"Only {page - 1} pages were processed for {posGroup}. \n should check failure")
+        pass
 
-    print(f"The lowest %Rostered for {posGroup} group was {pctRostered}")
-    print(f"A total of {page - 1} pages were processed for {posGroup} group. \n" +
-          f"{len(combinedTable)} players added")
+    # print(f"The lowest %Rostered for {posGroup} group was {pctRostered}")
+    # print(f"A total of {page - 1} pages were processed for {posGroup} group. \n" +
+    #       f"{len(combinedTable)} players added")
     assert len(combinedTable) > 0, "No players were added to the combined table"
     return combinedTable
 
@@ -165,5 +166,5 @@ def isDuplicateRow(row: Tag, tableRows: list[str]) -> bool:
         if espnID == "39382" and len(listShoheis) < 2:
             return False
         else:
-            print("duplicate row found, skipping table")
+            # print("duplicate row found, skipping table")
             return True
