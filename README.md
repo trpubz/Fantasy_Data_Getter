@@ -1,4 +1,4 @@
-# Fantasy_Data_Getter
+# Fantasy Data Getter
 Retrieves only relevant ESPN Player Universe from the league's Player Rater first handlful of pages.
 
 ## Dependancies
@@ -9,7 +9,7 @@ Retrieves only relevant ESPN Player Universe from the league's Player Rater firs
 ## Outputs
 - espnPlayerUniverse.json
   - .json schema is: 
-```
+```json
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "array",
@@ -60,5 +60,6 @@ Retrieves only relevant ESPN Player Universe from the league's Player Rater firs
                 "savantID"
             ]
         }
+    ]
 }
 ```
