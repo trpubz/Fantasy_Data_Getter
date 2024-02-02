@@ -1,5 +1,5 @@
 # Fantasy Data Getter
-Retrieves only relevant ESPN Player Universe from the league's Player Rater first handlful of pages.
+Retrieves only relevant ESPN Player Universe from the league's Player Rater first handful of pages.
 
 ## Dependencies
 - espnPlayerRaterURL = "https://fantasy.espn.com/baseball/playerrater?leagueId=" + leagueID

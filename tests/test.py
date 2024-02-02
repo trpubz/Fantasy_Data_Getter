@@ -1,7 +1,7 @@
 import unittest
 
 from Globals import Savant
-from main import getSavantData
+from app.main import getSavantData
 
 
 class TestSavant(unittest.TestCase):

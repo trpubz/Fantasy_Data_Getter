@@ -1,14 +1,13 @@
 """
 Automates the gathering of useful Fantasy Baseball Player Data.
 Exclusively the ESPN Fantasy Universe from the league's Player Rater page.
-v 2.0.0
-modified: 03 AUG 2023
+v 3.0.0
+modified: 1 FEB 2024
 by pubins.taylor
 """
-from time import sleep
-import re
 import os
 import subprocess
+import argparse
 
 from scrape import *
 import src.IOKit as IOKit
@@ -47,8 +46,9 @@ def fetchPlayerKeyMap() -> pd.DataFrame:
 
 def buildPlayerUniverse(dfKeyMap: pd.DataFrame):
     """
-    Function that parses the ESPN Fantasy Universe HTML file and extracts the player names and their ESPN Player IDs.
-    This function is dependent on the ESPN Fantasy Universe HTML file being downloaded and saved to the project root.
+    Function that parses the ESPN Fantasy Universe HTML file and extracts the player names and their
+    ESPN Player IDs. This function is dependent on the ESPN Fantasy Universe HTML file being
+    downloaded and saved to the project root.
     :param dfKeyMap: pandas dataframe that contains the player key map
     :return: none
     """
@@ -68,7 +68,9 @@ def buildPlayerUniverse(dfKeyMap: pd.DataFrame):
         playerData = player.find_all("td")
         # location ID can be in either the src or data-src attribute
         # if both are present, then data-src is the one to use
-        idLoc: str = playerData[1].find("img").get("data-src") or playerData[1].find("img").get("src")
+        idLoc: str = (playerData[1].find("img").get("data-src")
+                      or
+                      playerData[1].find("img").get("src"))
         try:
             espnID = re.findall(r'full/(\d+)\.png', idLoc)[0]
         except Exception as e:
@@ -84,7 +86,8 @@ def buildPlayerUniverse(dfKeyMap: pd.DataFrame):
                   f"   No matching player found in the key map")
             pctRostered = float(playerData[16].get_text(strip=True))
             if pctRostered > 2.0:
-                print(f"   player is rostered {pctRostered} of leagues, update/add player to key map!")
+                print(f"   player is rostered {pctRostered} \
+                      of leagues, update/add player to key map!")
             continue
 
     # print(f"Finished building player universe.  {len(players)} players found.")
@@ -104,11 +107,10 @@ def deleteTempFiles():
             os.remove(file)
 
 
-def main():
-    leagueID = "10998"
-    espnPlayerRaterURL = "https://fantasy.espn.com/baseball/playerrater?leagueId=" + leagueID
+def main(lg_id):
+    espnPlayerRaterURL = "https://fantasy.espn.com/baseball/playerrater?leagueId=" + lg_id
 
-    # print("\n---Running Fantasy Data Getter---\n")
+    print("\n---Running Fantasy Data Getter---\n")
 
     dfKeyMap = fetchPlayerKeyMap()
     # check to see if tempESPNPlayerRater.html exists; if not, download it
@@ -120,8 +122,15 @@ def main():
 
     deleteTempFiles()
 
-    # print("\n---Finished Fantasy Data Getter---")
+    print("\n---Finished Fantasy Data Getter---")
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(description="Process league ID.")
+    parser.add_argument(
+        "--lgID",
+        type=str, help="League ID",
+        default=os.getenv("MTBL_LGID", 'default value'))
+
+    args = parser.parse_args()
+    main(args.lgID)

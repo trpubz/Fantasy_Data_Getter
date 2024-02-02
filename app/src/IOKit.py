@@ -2,7 +2,7 @@ import os
 import glob
 import json
 
-from src.PlayerKit import Player
+from app.src.PlayerKit import Player
 
 getDir = lambda dir: dir if dir else "root"
 

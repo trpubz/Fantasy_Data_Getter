@@ -8,7 +8,6 @@ by pubins.taylor
 from time import sleep
 import re
 
-import selenium.webdriver.chrome.webdriver
 from driverkit.DriverKit import DKDriverConfig
 from src import IOKit
 from src.Globals import dirHQ
