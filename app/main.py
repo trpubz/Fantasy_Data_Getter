@@ -9,7 +9,6 @@ import os
 import argparse
 
 import src.scrape as scrape
-import src.IOKit as IOKit
 from src.Globals import dirHQ
 from src.PlayerKit import Player
 
@@ -19,7 +18,7 @@ players: list[Player] = []
 ESPN_PLAYER_RATER_BASE_URL = "https://fantasy.espn.com/baseball/playerrater?leagueId="
 
 
-def buildPlayerUniverse(raw_html):
+def build_player_universe(raw_html):
     """
     Function that parses the ESPN Fantasy Universe HTML file and extracts the player names and their
     ESPN Player IDs. This function is dependent on the ESPN Fantasy Universe HTML file being
@@ -68,7 +67,7 @@ def buildPlayerUniverse(raw_html):
     IOKit.writeOut(dir=dirHQ, fileName="espnPlayerUniverse", ext=".json", content=players)
 
 
-def deleteTempFiles():
+def delete_temp_files():
     """
     Function that deletes the temp files that were created during the execution of the program
     :return: none
@@ -82,17 +81,24 @@ def deleteTempFiles():
 def main(lg_id):
     print("\n---Running Fantasy Data Getter---\n")
 
+    # handle app directory
+    project_root = os.path.abspath(os.path.dirname(__file__))
+    temp_path = os.path.join(project_root, "temp")
+    if not os.path.exists(temp_path):
+        os.mkdir(temp_path)
+
     raw_html = ""
-    if not os.path.exists("temp_espn_player_universe.html"):
+    if not os.path.exists(os.path.join(temp_path, "temp_espn_player_universe.html")):
         # Fetch the raw html if a temp file does not exist
         raw_html = scrape.get_espn_plyr_universe(
+            temp_path,
             url=ESPN_PLAYER_RATER_BASE_URL + lg_id,
             headless=False)
 
     # Parse the raw html into players
-    buildPlayerUniverse(raw_html)
+    build_player_universe(raw_html)
 
-    deleteTempFiles()
+    delete_temp_files()
 
     print("\n---Finished Fantasy Data Getter---")
 

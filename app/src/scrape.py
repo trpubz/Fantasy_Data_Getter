@@ -7,10 +7,8 @@ by pubins.taylor
 """
 from time import sleep
 import re
-import os
 
 from mtbl_driverkit.mtbl_driverkit import dk_driver_config
-import src.IOKit as IOKit
 import mtbl_iokit.write
 
 from selenium import webdriver
@@ -20,15 +18,16 @@ from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup, Tag
 
 
-def get_espn_plyr_universe(url: str, headless: bool = False) -> str:
+def get_espn_plyr_universe(app_dir: str, url: str, headless: bool = False) -> str:
     """
     Navigates to the league's player rater URL and scrapes the pages & stores in temp file.
+    :param app_dir: The directory str for the app
     :param url: string corresponding to the article destination.
                 This changes from preseason to regular season
     :param headless: boolean to run the browser in headless mode
     :return: str of the raw HTML
     """
-    driver, _ = dk_driver_config(os.getcwd(), headless=headless)
+    driver, _ = dk_driver_config(app_dir, headless=headless)
     driver.get(url)
     driver.implicitly_wait(10)
 
@@ -65,15 +64,15 @@ def get_espn_plyr_universe(url: str, headless: bool = False) -> str:
                       f"Error message: {e}")
                 continue
 
-    # add the combined table to the rawHTML list
-    rawHTML = combinedTable.prettify()
-    assert len(rawHTML) > 0, "rawHTML is empty, run again"
+    # add the combined table to the raw_html list
+    raw_html = combinedTable.prettify()
+    assert len(raw_html) > 0, "raw_html is empty, run again"
     # write out the combined table to a file
     driver.close()
-    mtbl_iokit.write.write_out(rawHTML, os.getcwd(), "temp_espn_player_universe", ".html")
-    IOKit.writeOut(fileName="tempESPNPlayerUniverse", ext=".html", content=rawHTML)
+    mtbl_iokit.write.write_out(raw_html, app_dir, "temp_espn_player_universe", ".html")
+    # IOKit.writeOut(fileName="tempESPNPlayerUniverse", ext=".html", content=raw_html)
 
-    return rawHTML
+    return raw_html
 
 
 def expected_table_loaded(initialState, driver: webdriver.Chrome) -> bool:
