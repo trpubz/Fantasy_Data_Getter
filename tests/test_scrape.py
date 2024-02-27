@@ -3,6 +3,7 @@ import os
 
 import pytest
 import app.src.scrape as scrape
+from mtbl_driverkit.mtbl_driverkit import TempDirType
 
 
 class TestScrape:
@@ -17,7 +18,7 @@ class TestScrape:
             yield
 
     def test_get_espn_plyr_universe(self):
-        raw_html = scrape.get_espn_plyr_universe(self.temp_dir,
+        raw_html = scrape.get_espn_plyr_universe((TempDirType.TEMP, self.temp_dir),
                                                  self.ESPN_PLAYER_RATER_BASE_URL + self.LGID)
         assert raw_html is not None
         assert len(raw_html) > 0

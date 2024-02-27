@@ -8,7 +8,7 @@ by pubins.taylor
 from time import sleep
 import re
 
-from mtbl_driverkit.mtbl_driverkit import dk_driver_config
+from mtbl_driverkit.mtbl_driverkit import dk_driver_config, TempDirType
 import mtbl_iokit.write
 
 from selenium import webdriver
@@ -18,16 +18,18 @@ from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup, Tag
 
 
-def get_espn_plyr_universe(app_dir: str, url: str, headless: bool = False) -> str:
+def get_espn_plyr_universe(directory: tuple[TempDirType, str],
+                           url: str,
+                           headless: bool = False) -> str:
     """
     Navigates to the league's player rater URL and scrapes the pages & stores in temp file.
-    :param app_dir: The directory str for the app
+    :param directory: The directory tuple for the app
     :param url: string corresponding to the article destination.
                 This changes from preseason to regular season
     :param headless: boolean to run the browser in headless mode
     :return: str of the raw HTML
     """
-    driver, _ = dk_driver_config(app_dir, headless=headless)
+    driver, _ = dk_driver_config(directory, headless=headless)
     driver.get(url)
     driver.implicitly_wait(10)
 
@@ -55,7 +57,7 @@ def get_espn_plyr_universe(app_dir: str, url: str, headless: bool = False) -> st
                 WebDriverWait(driver, 5).until(
                     lambda _: expected_table_loaded(initialStatePlayerTable, driver)
                 )
-                # print(f"Processing {posGroup} group")
+                print(f"Processing {posGroup} group")
 
                 combinedTable.append(parse_pos_group(driver, posGroup))
 
@@ -69,7 +71,8 @@ def get_espn_plyr_universe(app_dir: str, url: str, headless: bool = False) -> st
     assert len(raw_html) > 0, "raw_html is empty, run again"
     # write out the combined table to a file
     driver.close()
-    mtbl_iokit.write.write_out(raw_html, app_dir, "temp_espn_player_universe", ".html")
+    # get the second value of the directory tuple for the path
+    mtbl_iokit.write.write_out(raw_html, directory[1], "temp_espn_player_universe", ".html")
     # IOKit.writeOut(fileName="tempESPNPlayerUniverse", ext=".html", content=raw_html)
 
     return raw_html
@@ -141,8 +144,7 @@ def parse_pos_group(sdrvr: webdriver, posGroup: str) -> Tag:
             next_button = WebDriverWait(sdrvr, 7).until(
                 EC.element_to_be_clickable(
                     (By.CSS_SELECTOR, "button.Button.Pagination__Button--next")))
-            # scroll button into view before clicking
-            # ActionChains(sdrvr).move_to_element(next_button).perform()
+
             next_button.click()
             sleep(1.6)
 
