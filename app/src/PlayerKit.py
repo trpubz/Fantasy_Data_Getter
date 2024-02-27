@@ -1,9 +1,10 @@
 """
-Description: PlayerKit is a module that contains the abstracts the player creation from the main executable
+Description: PlayerKit is a module that contains the abstracts the player creation from the
+main executable.
 by pubins.taylor
-version: 1.0.1
+version: 2.0.0
 date created: 19 MAY 2023
-date modified: 08 JUN 2023
+date modified: 02 FEB 2024
 """
 import re
 
@@ -11,13 +12,19 @@ import bs4
 from bs4 import BeautifulSoup
 
 
-# a class that represents a player, the attributes need to include the following: name, position dictionary,
-# ESPN ID, Fangraphs ID, team, age
-
-
 class Player:
-    def __init__(self, name="", team="", ovr: int = 0, positions=[], owner="", playerRater={}, espnID="",
-                 fangraphsID="", savantID=""):
+    def __init__(self,
+                 name="",
+                 team="",
+                 ovr: int = 0,
+                 positions=None,
+                 owner="",
+                 playerRater=None,
+                 espnID=""):
+        if playerRater is None:
+            playerRater = {}
+        if positions is None:
+            positions = []
         self._name: str = name
         self.team: str = team
         self.ovr: int = ovr
@@ -25,28 +32,31 @@ class Player:
         self.owner: str = owner
         self.playerRater: dict = playerRater
         self.espnID = espnID
-        self.fangraphsID: str = fangraphsID
-        self.savantID: str = savantID
 
     @classmethod
-    def from_data(cls, data: list, espnID: str, fangraphsID: str, savantID: str):
+    def from_data(cls, data: list, espnID: str):
         name = data[1].find("a", class_="AnchorLink").get_text(strip=True)
         ovr = int(data[0].text)
         regexPos = re.compile(".*playerpos.*")
         positions: list = data[1].find("span", class_=regexPos).get_text(strip=True).split(", ")
-        # sometimes position players can have RP stats when their team gets blown up, so this removes RP from the
-        # position player
+        # sometimes position players can have RP stats when their team gets blown up, so this
+        # removes RP from the position player
         if len(positions) > 1 and "RP" in positions and "SP" not in positions:
             positions.remove("RP")
         regexTm = re.compile(".*playerteam.*")
         team = data[1].find(class_=regexTm).get_text(strip=True).upper()
-        # if the owner is not listed, then the player is a free agent and the splitting the text will drop the waiver
-        # date and return only WA
+        # if the owner is not listed, then the player is a free agent and the splitting the text
+        # will drop the waiver date and return only WA
         owner = data[2].get_text(strip=True).split(" ")[0]
         playerRater = addPlayerRaterData(data[3:], positions)
 
-        return cls(name=name, ovr=ovr, positions=positions, team=team, owner=owner, playerRater=playerRater,
-                   espnID=espnID, fangraphsID=fangraphsID, savantID=savantID)
+        return cls(name=name,
+                   ovr=ovr,
+                   positions=positions,
+                   team=team,
+                   owner=owner,
+                   playerRater=playerRater,
+                   espnID=espnID)
 
     def to_dict(self):
         return {
@@ -56,9 +66,7 @@ class Player:
             'positions': self.positions,
             'owner': self.owner,
             'playerRater': self.playerRater,
-            'espnID': self.espnID,
-            'fangraphsID': self.fangraphsID,
-            'savantID': self.savantID
+            'espnID': self.espnID
         }
 
 

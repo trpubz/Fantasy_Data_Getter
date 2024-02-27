@@ -5,10 +5,11 @@ lxml~=5.1
 pandas~=2.2
 pyarrow
 selenium~=4.17
+mtbl-iokit @ git+https://github.com/trpubz/MTBL_IOKit.git@v0.1.0
 mtbl-driverkit @ git+https://github.com/trpubz/MTBL_DriverKit.git@v0.3.2
-mtbl-savekit @ git+https://github.com/trpubz/MTBL_SaveKit.git@v0.1.0
 
 
 # testing
 coverage~=7.4
 pytest~=8.0
+pytest-cov

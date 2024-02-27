@@ -1,15 +1,16 @@
 """
 Specifically webscraping and parsing handlers.
 Exclusively the ESPN Fantasy Universe from the league's Player Rater page.
-v 0.1.0
-modified: 03 AUG 2023
+v 1.0.0
+modified: 3 FEB 2024
 by pubins.taylor
 """
 from time import sleep
 import re
+import os
 
-from driverkit.DriverKit import DKDriverConfig
-from src import IOKit
+from mtbl_driverkit.mtbl_driverkit import dk_driver_config
+import src.IOKit as IOKit
 from src.Globals import dirHQ
 
 from selenium import webdriver
@@ -19,23 +20,24 @@ from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup, Tag
 
 
-def getESPNPlyrUniverse(url: str, headless: bool = True):
+def get_espn_plyr_universe(url: str, headless: bool = False):
     """
     Function that navigates to the league's player rater URL.
-    :param url: string corresponding to the article destination.  This changes from preseason to regular season
-    :param headless: boolean that determines whether to run the browser in headless mode
+    :param url: string corresponding to the article destination.
+                This changes from preseason to regular season
+    :param headless: boolean to run the browser in headless mode
     :return: none
     """
-    sdrvr: webdriver.Chrome = DKDriverConfig(dirDownload=dirHQ, headless=headless)
-    sdrvr.get(url)
-    sdrvr.implicitly_wait(10)
+    driver, _ = dk_driver_config(os.getcwd(), headless=headless)
+    driver.get(url)
+    driver.implicitly_wait(10)
 
     # sort the page by %Rostered
-    pctRosteredColumn = sdrvr.find_element(By.XPATH, "//th[div[span[contains(text(),'%ROST')]]]")
+    pctRosteredColumn = driver.find_element(By.XPATH, "//th[div[span[contains(text(),'%ROST')]]]")
     pctRosteredColumn.click()
     sleep(2.6)
     # get the position radio buttons
-    pickerGroup = sdrvr.find_element(By.CSS_SELECTOR, "#filterSlotIds")
+    pickerGroup = driver.find_element(By.CSS_SELECTOR, "#filterSlotIds")
     position_buttons = pickerGroup.find_elements(By.TAG_NAME, "label")
     # create empty table to hold the combined data
     # this table will combine all the pages of data into one table
@@ -44,26 +46,30 @@ def getESPNPlyrUniverse(url: str, headless: bool = True):
         posGroup = button.text
         if posGroup == "Batters" or posGroup == "Pitchers":
             try:
-                # page requires dynamic loading and the initial state is required to be compared to expected state
-                initialStatePlayerTable = sdrvr.find_element(By.CSS_SELECTOR, "tbody.Table__TBODY").text
+                # page requires dynamic loading and the initial state is required to be compared
+                # to expected state
+                initialStatePlayerTable = (driver
+                                           .find_element(By.CSS_SELECTOR, "tbody.Table__TBODY")
+                                           .text)
                 button.click()
                 # give the page time to load
-                WebDriverWait(sdrvr, 5).until(
-                    lambda _: expectedTableLoaded(initialStatePlayerTable, sdrvr)
+                WebDriverWait(driver, 5).until(
+                    lambda _: expectedTableLoaded(initialStatePlayerTable, driver)
                 )
                 # print(f"Processing {posGroup} group")
 
-                combinedTable.append(parsePosGroup(sdrvr, posGroup))
+                combinedTable.append(parsePosGroup(driver, posGroup))
 
             except Exception as e:
-                print(f"An error occurred in getESPNPlyrUniverse while processing {posGroup}. Error message: {e}")
+                print(f"An error occurred in getESPNPlyrUniverse while processing {posGroup}. "
+                      f"Error message: {e}")
                 continue
 
     # add the combined table to the rawHTML list
     rawHTML = combinedTable.prettify()
     assert len(rawHTML) > 0, "rawHTML is empty, run again"
     # write out the combined table to a file
-    sdrvr.close()
+    driver.close()
     IOKit.writeOut(fileName="tempESPNPlayerUniverse", ext=".html", content=rawHTML)
     return rawHTML
 
