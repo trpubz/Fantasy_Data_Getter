@@ -1,10 +1,7 @@
-import unittest
-
-from Globals import Savant
-from app.main import getSavantData
+import pytest
 
 
-class TestSavant(unittest.TestCase):
+class TestScrape:
     def runSavant(self):
         getSavantData(statcastData=Savant.xStats)
         self.assertTrue(True)

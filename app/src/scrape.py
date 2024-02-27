@@ -1,8 +1,8 @@
 """
 Specifically webscraping and parsing handlers.
 Exclusively the ESPN Fantasy Universe from the league's Player Rater page.
-v 1.0.0
-modified: 3 FEB 2024
+v 2.0.0
+modified: 27 FEB 2024
 by pubins.taylor
 """
 from time import sleep
@@ -11,7 +11,7 @@ import os
 
 from mtbl_driverkit.mtbl_driverkit import dk_driver_config
 import src.IOKit as IOKit
-from src.Globals import dirHQ
+import mtbl_iokit.write
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -20,13 +20,13 @@ from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup, Tag
 
 
-def get_espn_plyr_universe(url: str, headless: bool = False):
+def get_espn_plyr_universe(url: str, headless: bool = False) -> str:
     """
-    Function that navigates to the league's player rater URL.
+    Navigates to the league's player rater URL and scrapes the pages & stores in temp file.
     :param url: string corresponding to the article destination.
                 This changes from preseason to regular season
     :param headless: boolean to run the browser in headless mode
-    :return: none
+    :return: str of the raw HTML
     """
     driver, _ = dk_driver_config(os.getcwd(), headless=headless)
     driver.get(url)
@@ -54,11 +54,11 @@ def get_espn_plyr_universe(url: str, headless: bool = False):
                 button.click()
                 # give the page time to load
                 WebDriverWait(driver, 5).until(
-                    lambda _: expectedTableLoaded(initialStatePlayerTable, driver)
+                    lambda _: expected_table_loaded(initialStatePlayerTable, driver)
                 )
                 # print(f"Processing {posGroup} group")
 
-                combinedTable.append(parsePosGroup(driver, posGroup))
+                combinedTable.append(parse_pos_group(driver, posGroup))
 
             except Exception as e:
                 print(f"An error occurred in getESPNPlyrUniverse while processing {posGroup}. "
@@ -70,17 +70,26 @@ def get_espn_plyr_universe(url: str, headless: bool = False):
     assert len(rawHTML) > 0, "rawHTML is empty, run again"
     # write out the combined table to a file
     driver.close()
+    mtbl_iokit.write.write_out(rawHTML, os.getcwd(), "temp_espn_player_universe", ".html")
     IOKit.writeOut(fileName="tempESPNPlayerUniverse", ext=".html", content=rawHTML)
+
     return rawHTML
 
 
-def expectedTableLoaded(initialState, driver: webdriver.Chrome):
+def expected_table_loaded(initialState, driver: webdriver.Chrome) -> bool:
+    """
+    Compares the current state against the initial state
+    :param initialState: HTML string of the initial state
+    :param driver: active web driver
+    :return: bool that compares HTML Table Body strings
+    """
     return initialState != driver.find_element(By.CSS_SELECTOR, "tbody.Table__TBODY").text
 
 
-def parsePosGroup(sdrvr: webdriver, posGroup: str) -> Tag:
+def parse_pos_group(sdrvr: webdriver, posGroup: str) -> Tag:
     """
-    Function that parses the HTML of multiple position group pages and returns the table of player data
+    Function that parses the HTML of multiple position group pages and returns the table of
+    player data.
     :param sdrvr: webdriver object
     :param posGroup: "Batters" or "Pitchers"
     :return: a combined table of player data
@@ -120,7 +129,7 @@ def parsePosGroup(sdrvr: webdriver, posGroup: str) -> Tag:
                         combinedPlayerRow.append(plyr)
                     # updated the pctRostered variable
                     pctRostered = float(combinedPlayerRow.select_one("div[title*='rostered']").string)
-                    if not isDuplicateRow(combinedPlayerRow, tableRows):
+                    if not is_duplicate_row(combinedPlayerRow, tableRows):
                         tableRows.append(str(combinedPlayerRow))
                         combinedTable.append(combinedPlayerRow)
                 else:
@@ -143,7 +152,8 @@ def parsePosGroup(sdrvr: webdriver, posGroup: str) -> Tag:
             continue
 
     if page < 4:
-        # print(f"Only {page - 1} pages were processed for {posGroup}. \n should check failure")
+        print(f"Only {page - 1} pages were processed for {posGroup}.\n   Potential scraping "
+              f"failure.")
         pass
 
     # print(f"The lowest %Rostered for {posGroup} group was {pctRostered}")
@@ -153,7 +163,7 @@ def parsePosGroup(sdrvr: webdriver, posGroup: str) -> Tag:
     return combinedTable
 
 
-def isDuplicateRow(row: Tag, tableRows: list[str]) -> bool:
+def is_duplicate_row(row: Tag, tableRows: list[str]) -> bool:
     """
     Function that checks to see if a row is already in the tableRows list
     :param row: a row of player data

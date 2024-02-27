@@ -8,7 +8,7 @@ by pubins.taylor
 import os
 import argparse
 
-from src.scrape import *
+import src.scrape as scrape
 import src.IOKit as IOKit
 from src.Globals import dirHQ
 from src.PlayerKit import Player
@@ -83,9 +83,13 @@ def main(lg_id):
     print("\n---Running Fantasy Data Getter---\n")
 
     raw_html = ""
-    if not os.path.exists("tempESPNPlayerUniverse.html"):
-        raw_html = get_espn_plyr_universe(url=ESPN_PLAYER_RATER_BASE_URL + lg_id, headless=False)
+    if not os.path.exists("temp_espn_player_universe.html"):
+        # Fetch the raw html if a temp file does not exist
+        raw_html = scrape.get_espn_plyr_universe(
+            url=ESPN_PLAYER_RATER_BASE_URL + lg_id,
+            headless=False)
 
+    # Parse the raw html into players
     buildPlayerUniverse(raw_html)
 
     deleteTempFiles()
