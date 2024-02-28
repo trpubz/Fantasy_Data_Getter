@@ -5,7 +5,7 @@
 # version 0.1.0
 # Houses the generics for Selenium WebDriver Link Builders
 
-from src.Globals import FGSystem, FGPosGrp, Savant, SavantPosGrp, SavantDownload
+from app.src.globals import FGSystem, FGPosGrp, Savant, SavantPosGrp, SavantDownload
 
 
 def DKFGLinkBuilder(*projections: list[FGSystem], pos: list[FGPosGrp] = (FGPosGrp.HIT, FGPosGrp.PIT)) -> list[

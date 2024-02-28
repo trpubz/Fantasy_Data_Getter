@@ -1,17 +1,15 @@
 """
 Specifically webscraping and parsing handlers.
 Exclusively the ESPN Fantasy Universe from the league's Player Rater page.
-v 0.1.0
-modified: 03 AUG 2023
+v 2.0.0
+modified: 27 FEB 2024
 by pubins.taylor
 """
 from time import sleep
 import re
 
-import selenium.webdriver.chrome.webdriver
-from driverkit.DriverKit import DKDriverConfig
-from src import IOKit
-from src.Globals import dirHQ
+from mtbl_driverkit.mtbl_driverkit import dk_driver_config, TempDirType
+import mtbl_iokit.write
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -20,23 +18,28 @@ from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup, Tag
 
 
-def getESPNPlyrUniverse(url: str, headless: bool = True):
+def get_espn_plyr_universe(directory: tuple[TempDirType, str],
+                           url: str,
+                           headless: bool = False) -> str:
     """
-    Function that navigates to the league's player rater URL.
-    :param url: string corresponding to the article destination.  This changes from preseason to regular season
-    :param headless: boolean that determines whether to run the browser in headless mode
-    :return: none
+    Navigates to the league's player rater URL and scrapes the pages & stores in temp file.
+    :param directory: The directory tuple for the app
+    :param url: string corresponding to the article destination.
+                This changes from preseason to regular season
+    :param headless: boolean to run the browser in headless mode
+    :return: str of the raw HTML
     """
-    sdrvr: webdriver.Chrome = DKDriverConfig(dirDownload=dirHQ, headless=headless)
-    sdrvr.get(url)
-    sdrvr.implicitly_wait(10)
+    # print(__name__)
+    driver, _ = dk_driver_config(directory, headless=headless)
+    driver.get(url)
+    driver.implicitly_wait(10)
 
     # sort the page by %Rostered
-    pctRosteredColumn = sdrvr.find_element(By.XPATH, "//th[div[span[contains(text(),'%ROST')]]]")
+    pctRosteredColumn = driver.find_element(By.XPATH, "//th[div[span[contains(text(),'%ROST')]]]")
     pctRosteredColumn.click()
     sleep(2.6)
     # get the position radio buttons
-    pickerGroup = sdrvr.find_element(By.CSS_SELECTOR, "#filterSlotIds")
+    pickerGroup = driver.find_element(By.CSS_SELECTOR, "#filterSlotIds")
     position_buttons = pickerGroup.find_elements(By.TAG_NAME, "label")
     # create empty table to hold the combined data
     # this table will combine all the pages of data into one table
@@ -45,37 +48,50 @@ def getESPNPlyrUniverse(url: str, headless: bool = True):
         posGroup = button.text
         if posGroup == "Batters" or posGroup == "Pitchers":
             try:
-                # page requires dynamic loading and the initial state is required to be compared to expected state
-                initialStatePlayerTable = sdrvr.find_element(By.CSS_SELECTOR, "tbody.Table__TBODY").text
+                # page requires dynamic loading and the initial state is required to be compared
+                # to expected state
+                initialStatePlayerTable = (driver
+                                           .find_element(By.CSS_SELECTOR, "tbody.Table__TBODY")
+                                           .text)
                 button.click()
                 # give the page time to load
-                WebDriverWait(sdrvr, 5).until(
-                    lambda _: expectedTableLoaded(initialStatePlayerTable, sdrvr)
+                WebDriverWait(driver, 5).until(
+                    lambda _: expected_table_loaded(initialStatePlayerTable, driver)
                 )
                 print(f"Processing {posGroup} group")
 
-                combinedTable.append(parsePosGroup(sdrvr, posGroup))
+                combinedTable.append(parse_pos_group(driver, posGroup))
 
             except Exception as e:
-                print(f"An error occurred in getESPNPlyrUniverse while processing {posGroup}. Error message: {e}")
+                print(f"An error occurred in getESPNPlyrUniverse while processing {posGroup}. "
+                      f"Error message: {e}")
                 continue
 
-    # add the combined table to the rawHTML list
-    rawHTML = combinedTable.prettify()
-    assert len(rawHTML) > 0, "rawHTML is empty, run again"
+    # add the combined table to the raw_html list
+    raw_html = combinedTable.prettify()
+    assert len(raw_html) > 0, "raw_html is empty, run again"
     # write out the combined table to a file
-    sdrvr.close()
-    IOKit.writeOut(fileName="tempESPNPlayerUniverse", ext=".html", content=rawHTML)
-    return rawHTML
+    driver.close()
+    # get the second value of the directory tuple for the path
+    mtbl_iokit.write.write_out(raw_html, directory[1], "temp_espn_player_universe", ".html")
+
+    return raw_html
 
 
-def expectedTableLoaded(initialState, driver: webdriver.Chrome):
+def expected_table_loaded(initialState, driver: webdriver.Chrome) -> bool:
+    """
+    Compares the current state against the initial state
+    :param initialState: HTML string of the initial state
+    :param driver: active web driver
+    :return: bool that compares HTML Table Body strings
+    """
     return initialState != driver.find_element(By.CSS_SELECTOR, "tbody.Table__TBODY").text
 
 
-def parsePosGroup(sdrvr: webdriver, posGroup: str) -> Tag:
+def parse_pos_group(sdrvr: webdriver, posGroup: str) -> Tag:
     """
-    Function that parses the HTML of multiple position group pages and returns the table of player data
+    Function that parses the HTML of multiple position group pages and returns the table of
+    player data.
     :param sdrvr: webdriver object
     :param posGroup: "Batters" or "Pitchers"
     :return: a combined table of player data
@@ -115,21 +131,20 @@ def parsePosGroup(sdrvr: webdriver, posGroup: str) -> Tag:
                         combinedPlayerRow.append(plyr)
                     # updated the pctRostered variable
                     pctRostered = float(combinedPlayerRow.select_one("div[title*='rostered']").string)
-                    if not isDuplicateRow(combinedPlayerRow, tableRows):
+                    if not is_duplicate_row(combinedPlayerRow, tableRows):
                         tableRows.append(str(combinedPlayerRow))
                         combinedTable.append(combinedPlayerRow)
                 else:
                     continue  # if i (row) == 0 on any other page, then skip it
             # go to the next page
-            print(f"Finished processing page {page} for {posGroup}")
+            # print(f"Finished processing page {page} for {posGroup}")
             page += 1
             # always to click to next page, pctRostered will be checked at the top of the loop
             sleep(.3)
             next_button = WebDriverWait(sdrvr, 7).until(
                 EC.element_to_be_clickable(
                     (By.CSS_SELECTOR, "button.Button.Pagination__Button--next")))
-            # scroll button into view before clicking
-            # ActionChains(sdrvr).move_to_element(next_button).perform()
+
             next_button.click()
             sleep(1.6)
 
@@ -138,16 +153,18 @@ def parsePosGroup(sdrvr: webdriver, posGroup: str) -> Tag:
             continue
 
     if page < 4:
-        print(f"Only {page - 1} pages were processed for {posGroup}. \n should check failure")
+        print(f"Only {page - 1} pages were processed for {posGroup}.\n   Potential scraping "
+              f"failure.")
+        pass
 
-    print(f"The lowest %Rostered for {posGroup} group was {pctRostered}")
-    print(f"A total of {page - 1} pages were processed for {posGroup} group. \n" +
-          f"{len(combinedTable)} players added")
+    # print(f"The lowest %Rostered for {posGroup} group was {pctRostered}")
+    # print(f"A total of {page - 1} pages were processed for {posGroup} group. \n" +
+    #       f"{len(combinedTable)} players added")
     assert len(combinedTable) > 0, "No players were added to the combined table"
     return combinedTable
 
 
-def isDuplicateRow(row: Tag, tableRows: list[str]) -> bool:
+def is_duplicate_row(row: Tag, tableRows: list[str]) -> bool:
     """
     Function that checks to see if a row is already in the tableRows list
     :param row: a row of player data
@@ -165,5 +182,5 @@ def isDuplicateRow(row: Tag, tableRows: list[str]) -> bool:
         if espnID == "39382" and len(listShoheis) < 2:
             return False
         else:
-            print("duplicate row found, skipping table")
+            # print("duplicate row found, skipping table")
             return True

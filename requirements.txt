@@ -1,6 +1,15 @@
-beautifulsoup4==4.12.2
-html5lib==1.1
-lxml>=4.9.2
-pandas>=2.0.1
-selenium>=4.11
-DriverKit @ git+https://github.com/trpubz/SeleniumDriverKit.git@v0.1.1
+setuptools
+
+beautifulsoup4~=4.12
+lxml~=5.1
+pandas~=2.2
+pyarrow
+selenium~=4.17
+mtbl-iokit @ git+https://github.com/trpubz/MTBL_IOKit.git@v0.2.0
+mtbl-driverkit @ git+https://github.com/trpubz/MTBL_DriverKit.git@v0.4.0
+
+
+# testing
+coverage~=7.4
+pytest~=8.0
+pytest-cov
