@@ -73,7 +73,6 @@ def get_espn_plyr_universe(directory: tuple[TempDirType, str],
     driver.close()
     # get the second value of the directory tuple for the path
     mtbl_iokit.write.write_out(raw_html, directory[1], "temp_espn_player_universe", ".html")
-    # IOKit.writeOut(fileName="tempESPNPlayerUniverse", ext=".html", content=raw_html)
 
     return raw_html
 

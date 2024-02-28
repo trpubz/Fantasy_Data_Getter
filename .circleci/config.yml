@@ -28,6 +28,19 @@ jobs:
     steps:
       # Checkout the code as the first step.
       - checkout
+      - run:
+          name: Set up Chrome
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y google-chrome-stable
+      - run:
+          name: Set up Xvfb
+          command: |
+            sudo apt-get install -y xvfb
+            # Set up Xvfb virtual display
+            sudo Xvfb :99 -ac &
+            # Set the DISPLAY environment variable
+            echo "DISPLAY=:99" >> $GITHUB_ENV
       - python/install-packages:
           pkg-manager: pip
           # app-dir: ~/project/package-directory/  # If your requirements.txt isn't in the root directory.
@@ -36,8 +49,8 @@ jobs:
           name: Run tests
           # This assumes pytest is installed via the install-package step above
           command: |
-            poetry run pytest --cov .
-            poetry run coverage xml
+            pytest --cov .
+            coverage xml
       - codecov/upload:
           cli_args: -v
 
