@@ -7,6 +7,7 @@ by pubins.taylor
 """
 import os
 import argparse
+import shutil
 
 import src.scrape as scrape
 import src.build as build
@@ -22,10 +23,11 @@ def delete_temp_files():
     Function that deletes the temp files that were created during the execution of the program
     :return: none
     """
-    # delete any file that starts with "temp"
-    for file in os.listdir():
-        if file.startswith("temp"):
-            os.remove(file)
+    project_root = os.path.abspath(os.path.dirname(__file__))  # Get directory of 'app/main.py'
+    temp_path = os.path.join(project_root, "temp")
+
+    if os.path.exists(temp_path):  # Check if "temp" folder exists
+        shutil.rmtree(temp_path)
 
 
 def main(lg_id):
@@ -37,13 +39,10 @@ def main(lg_id):
     if not os.path.exists(temp_path):
         os.mkdir(temp_path)
 
-    raw_html = ""
-    if not os.path.exists(os.path.join(temp_path, "temp_espn_player_universe.html")):
-        # Fetch the raw html if a temp file does not exist
-        raw_html = scrape.get_espn_plyr_universe(
-            (TempDirType.APP, temp_path),
-            url=ESPN_PLAYER_RATER_BASE_URL + lg_id,
-            headless=False)
+    raw_html = scrape.get_espn_plyr_universe(
+        (TempDirType.APP, temp_path),
+        url=ESPN_PLAYER_RATER_BASE_URL + lg_id,
+        headless=False)
 
     # Parse the raw html into players
     build.build_player_universe(raw_html)

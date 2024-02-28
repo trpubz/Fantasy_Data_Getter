@@ -29,6 +29,7 @@ def get_espn_plyr_universe(directory: tuple[TempDirType, str],
     :param headless: boolean to run the browser in headless mode
     :return: str of the raw HTML
     """
+    # print(__name__)
     driver, _ = dk_driver_config(directory, headless=headless)
     driver.get(url)
     driver.implicitly_wait(10)
