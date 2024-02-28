@@ -7,7 +7,7 @@ by pubins.taylor
 import os
 import re
 from bs4 import BeautifulSoup
-import app.src.globals as mtbl_globals
+from . import mtbl_globals
 from mtbl_iokit import write, read
 from mtbl_iokit.read import IOKitDataTypes
 from mtbl_playerkit.espn_player import ESPNPlayer
