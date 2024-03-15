@@ -10,7 +10,7 @@ import os
 import argparse
 import shutil
 
-import app.src.scrape as scrape
+from app.src.scrape import Scraper
 import app.src.build as build
 
 from mtbl_driverkit.mtbl_driverkit import TempDirType
@@ -37,8 +37,10 @@ def main(lg_id, etl_type):
     print("\n---Running Fantasy Data Getter---\n")
     url = ""
     match etl_type:
-        case ETLType.PRE_SZN: url = ESPN_PROJECTIONS_BASE_URL
-        case ETLType.REG_SZN: url = ESPN_PLAYER_RATER_BASE_URL
+        case ETLType.PRE_SZN:
+            url = ESPN_PROJECTIONS_BASE_URL
+        case ETLType.REG_SZN:
+            url = ESPN_PLAYER_RATER_BASE_URL
     url += lg_id
 
     # handle app directory
@@ -47,11 +49,16 @@ def main(lg_id, etl_type):
     if not os.path.exists(temp_path):
         os.mkdir(temp_path)
 
-    raw_html = scrape.get_espn_plyr_universe(
-        (TempDirType.APP, temp_path),
-        url=url,
-        headless=False,
-        etl_type=etl_type)
+    scraper = Scraper((TempDirType.APP, temp_path), etl_type=etl_type,
+                      headless=False)
+    scraper.get_espn_plyr_universe(url)
+
+    raw_html = []
+    match etl_type:
+        case ETLType.PRE_SZN:
+            raw_html = [scraper.bats, scraper.arms]
+        case ETLType.REG_SZN:
+            raw_html = [scraper.combined_table]
 
     # Parse the raw html into players
     build.build_player_universe(etl_type, raw_html)

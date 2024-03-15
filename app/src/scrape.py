@@ -1,8 +1,8 @@
 """
 Specifically webscraping and parsing handlers.
 Exclusively the ESPN Fantasy Universe from the league's Player Rater page.
-v 2.0.0
-modified: 27 FEB 2024
+v 3.0.0
+modified: 15 MAR 2024
 by pubins.taylor
 """
 from time import sleep
@@ -76,13 +76,13 @@ class Scraper:
 
                     match self.etl_type:
                         case ETLType.REG_SZN:
-                            self.combined_table.append(self.parse_pos_group(pos_group).prettify())
+                            self.combined_table.append(self.parse_pos_group(pos_group))
                         case ETLType.PRE_SZN:
                             match pos_group:
                                 case "Batters":
-                                    self.bats = self.parse_pos_group(pos_group).prettify()
+                                    self.bats = self.parse_pos_group(pos_group)
                                 case "Pitchers":
-                                    self.arms = self.parse_pos_group(pos_group).prettify()
+                                    self.arms = self.parse_pos_group(pos_group)
 
                 except Exception as e:
                     print(f"An error occurred in while processing {pos_group}. "
@@ -175,17 +175,17 @@ class Scraper:
         match self.etl_type:
             case ETLType.REG_SZN:
                 # get the second value of the directory tuple for the path
-                mtbl_iokit.write.write_out(self.combined_table,
+                mtbl_iokit.write.write_out(self.combined_table.prettify(),
                                            self.directory[1],
                                            "temp_espn_player_universe",
                                            ".html")
             case ETLType.PRE_SZN:
                 # get the second value of the directory tuple for the path
-                mtbl_iokit.write.write_out(self.bats,
+                mtbl_iokit.write.write_out(self.bats.prettify(),
                                            self.directory[1],
                                            "temp_espn_bats_universe",
                                            ".html")
-                mtbl_iokit.write.write_out(self.arms,
+                mtbl_iokit.write.write_out(self.arms.prettify(),
                                            self.directory[1],
                                            "temp_espn_arms_universe",
                                            ".html")

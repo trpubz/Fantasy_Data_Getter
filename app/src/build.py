@@ -18,7 +18,7 @@ players: list[ESPNPlayer] = []
 
 
 def build_player_universe(etl_type: ETLType,
-                          raw_html: str = "",
+                          raw_html: list,
                           temp_dir: any = None,
                           output_dir: str = DIR_EXTRACT) -> None:
     """
@@ -26,7 +26,7 @@ def build_player_universe(etl_type: ETLType,
     ESPN Player IDs. This function is dependent on the ESPN Fantasy Universe HTML file being
     downloaded and saved to the project root.
     :param etl_type: PRESZN or REGSZN
-    :param raw_html: string containing the raw HTML file
+    :param raw_html: list containing the raw HTMLs
     :param temp_dir: string containing the path to raw HTML file.
                         if None, raw_html must not be None.
     :param output_dir: string containing the directory to save json

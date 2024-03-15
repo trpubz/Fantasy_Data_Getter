@@ -12,7 +12,7 @@ class TestBuild:
 
     @pytest.fixture(autouse=True)
     def setup_teardown(self):
-        with open("tests/fixtures/temp_espn_player_universe.html", "r") as f:
+        with open("tests/fixtures/temp_espn_player_universe_dep.html", "r") as f:
             self.raw_html = f.read()
 
     def test_build_player_universe_raw_html_bufferized(self):
