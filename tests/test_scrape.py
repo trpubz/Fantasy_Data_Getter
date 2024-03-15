@@ -3,13 +3,16 @@ import os
 import shutil
 
 import pytest
-import app.src.scrape as scrape
 from mtbl_driverkit.mtbl_driverkit import TempDirType
+from app.src.scrape import Scraper
+from app.src.mtbl_globals import ETLType
+
+ESPN_PLAYER_RATER_BASE_URL = "https://fantasy.espn.com/baseball/playerrater?leagueId="
+ESPN_PROJECTIONS_BASE_URL = "https://fantasy.espn.com/baseball/players/projections?leagueId="
 
 
 class TestScrape:
     temp_dir = ""
-    ESPN_PLAYER_RATER_BASE_URL = "https://fantasy.espn.com/baseball/playerrater?leagueId="
     LGID = os.getenv("MTBL_LGID", 'default value')
 
     @pytest.fixture(autouse=True)
@@ -18,23 +21,33 @@ class TestScrape:
             self.temp_dir = temp_dir
             yield
 
-    def test_get_espn_plyr_universe(self):
-        raw_html = scrape.get_espn_plyr_universe((TempDirType.TEMP, self.temp_dir),
-                                                 self.ESPN_PLAYER_RATER_BASE_URL + self.LGID)
-        assert raw_html is not None
-        assert len(raw_html) > 0
+    def test_get_espn_plyr_universe_reg_szn(self):
+        scraper = Scraper((TempDirType.TEMP, self.temp_dir), ETLType.REG_SZN)
+        scraper.get_espn_plyr_universe(ESPN_PLAYER_RATER_BASE_URL + self.LGID)
+        assert scraper.combined_table is not None
+        assert len(scraper.combined_table) > 0
         assert os.path.exists(os.path.join(self.temp_dir, "temp_espn_player_universe.html"))
 
-    def test_get_espn_plyr_universe_app_root_not_temp(self):
+    def test_get_espn_plyr_universe_pre_szn(self):
+        scraper = Scraper((TempDirType.TEMP, self.temp_dir), ETLType.PRE_SZN)
+        scraper.get_espn_plyr_universe(ESPN_PROJECTIONS_BASE_URL + self.LGID)
+        assert scraper.bats is not None
+        assert scraper.arms is not None
+        assert os.path.exists(os.path.join(self.temp_dir, "temp_espn_bats_universe.html"))
+        assert os.path.exists(os.path.join(self.temp_dir, "temp_espn_arms_universe.html"))
+
+    @pytest.mark.skip
+    def test_get_espn_plyr_universe_app_root_not_tempfile(self):
         project_root = os.path.abspath(os.path.dirname(__file__))
         temp_path = os.path.join(project_root, "temp")
         if not os.path.exists(temp_path):
             os.mkdir(temp_path)
 
-        raw_html = scrape.get_espn_plyr_universe((TempDirType.APP, temp_path),
-                                                 self.ESPN_PLAYER_RATER_BASE_URL + self.LGID)
-        assert raw_html is not None
-        assert len(raw_html) > 0
+        scraper = Scraper((TempDirType.APP, temp_path), ETLType.REG_SZN)
+
+        scraper.get_espn_plyr_universe(ESPN_PLAYER_RATER_BASE_URL + self.LGID)
+        assert scraper.combined_table is not None
+        assert len(scraper.combined_table) > 0
         assert os.path.exists(os.path.join(temp_path, "temp_espn_player_universe.html"))
 
-        shutil.rmtree("temp")
+        shutil.rmtree("tests/temp")

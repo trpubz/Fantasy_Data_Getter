@@ -1,21 +1,24 @@
 """
 Automates the gathering of useful Fantasy Baseball Player Data.
-Exclusively the ESPN Fantasy Universe from the league's Player Rater page.
-v 3.0.0
-modified: 27 FEB 2024
+Pulls regular season stats for the ESPN Fantasy Universe from the league's Player Rater page.
+Pull preseason projections from the league's Projections page.
+v 4.0.0
+modified: 15 MAR 2024
 by pubins.taylor
 """
 import os
 import argparse
 import shutil
 
-import src.scrape as scrape
-import src.build as build
+import app.src.scrape as scrape
+import app.src.build as build
 
 from mtbl_driverkit.mtbl_driverkit import TempDirType
 
+from app.src.mtbl_globals import ETLType
 
 ESPN_PLAYER_RATER_BASE_URL = "https://fantasy.espn.com/baseball/playerrater?leagueId="
+ESPN_PROJECTIONS_BASE_URL = "https://fantasy.espn.com/baseball/players/projections?leagueId="
 
 
 def delete_temp_files():
@@ -23,15 +26,20 @@ def delete_temp_files():
     Function that deletes the temp files that were created during the execution of the program
     :return: none
     """
-    project_root = os.path.abspath(os.path.dirname(__file__))  # Get directory of 'app/main.py'
+    project_root = os.path.abspath(os.path.dirname(__file__))  # Get directory of 'app/__main__.py'
     temp_path = os.path.join(project_root, "temp")
 
     if os.path.exists(temp_path):  # Check if "temp" folder exists
         shutil.rmtree(temp_path)
 
 
-def main(lg_id):
+def main(lg_id, etl_type):
     print("\n---Running Fantasy Data Getter---\n")
+    url = ""
+    match etl_type:
+        case ETLType.PRE_SZN: url = ESPN_PROJECTIONS_BASE_URL
+        case ETLType.REG_SZN: url = ESPN_PLAYER_RATER_BASE_URL
+    url += lg_id
 
     # handle app directory
     project_root = os.path.abspath(os.path.dirname(__file__))
@@ -41,11 +49,12 @@ def main(lg_id):
 
     raw_html = scrape.get_espn_plyr_universe(
         (TempDirType.APP, temp_path),
-        url=ESPN_PLAYER_RATER_BASE_URL + lg_id,
-        headless=False)
+        url=url,
+        headless=False,
+        etl_type=etl_type)
 
     # Parse the raw html into players
-    build.build_player_universe(raw_html)
+    build.build_player_universe(etl_type, raw_html)
 
     delete_temp_files()
 
@@ -53,11 +62,17 @@ def main(lg_id):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Process league ID.")
+    parser = argparse.ArgumentParser(description="Process Fantasy Universe Data")
     parser.add_argument(
         "--lgID",
         type=str, help="League ID",
         default=os.getenv("MTBL_LGID", 'default value'))
+    parser.add_argument(
+        "--etl-type",
+        type=ETLType.from_string,
+        choices=list(ETLType),
+        help="ETL Type; PRE_SZN or REG_SZN",
+        default=ETLType.PRE_SZN)
 
     args = parser.parse_args()
-    main(args.lgID)
+    main(args.lgID, args.etl_type)

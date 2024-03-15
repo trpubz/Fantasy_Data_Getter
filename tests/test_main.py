@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from app.main import main
+from app.__main__ import main
 
 
 class TestMain:

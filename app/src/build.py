@@ -7,22 +7,25 @@ by pubins.taylor
 import os
 import re
 from bs4 import BeautifulSoup
-from . import mtbl_globals
+from app.src.mtbl_globals import ETLType, DIR_EXTRACT
 from mtbl_iokit import write, read
 from mtbl_iokit.read import IOKitDataTypes
 from mtbl_playerkit.espn_player import ESPNPlayer
 
+from .mtbl_globals import ETLType
+
 players: list[ESPNPlayer] = []
 
 
-def build_player_universe(
-        raw_html: str = "",
-        temp_dir: any = None,
-        output_dir: str = mtbl_globals.DIR_EXTRACT) -> None:
+def build_player_universe(etl_type: ETLType,
+                          raw_html: str = "",
+                          temp_dir: any = None,
+                          output_dir: str = DIR_EXTRACT) -> None:
     """
     Function that parses the ESPN Fantasy Universe HTML file and extracts the player names and their
     ESPN Player IDs. This function is dependent on the ESPN Fantasy Universe HTML file being
     downloaded and saved to the project root.
+    :param etl_type: PRESZN or REGSZN
     :param raw_html: string containing the raw HTML file
     :param temp_dir: string containing the path to raw HTML file.
                         if None, raw_html must not be None.
