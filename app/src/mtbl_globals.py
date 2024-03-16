@@ -35,6 +35,9 @@ class ETLType(Enum):
     PRE_SZN = "preseason"
     REG_SZN = "regular_season"
 
+    def __eq__(self, other):
+        return self.value == other.value
+
     def __str__(self):
         return self.name
 

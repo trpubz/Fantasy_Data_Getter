@@ -18,7 +18,7 @@ players: list[ESPNPlayer] = []
 
 
 def build_player_universe(etl_type: ETLType,
-                          raw_html: list,
+                          raw_html: list = None,
                           temp_dir: any = None,
                           output_dir: str = DIR_EXTRACT) -> None:
     """
@@ -34,48 +34,56 @@ def build_player_universe(etl_type: ETLType,
     """
     os.environ['PYDEVD_WARN_SLOW_RESOLVE_TIMEOUT'] = '1.5s'
 
-    if raw_html == "":
+    if raw_html is None:
         try:
-            raw_html = stringify_raw_html(temp_dir)
+            raw_html = stringify_raw_html(temp_dir, etl_type)
         except RawHtmlLoadError as e:
             print(f"Could not load raw HTML file. {e}")
             exit(1)
 
-    soup = BeautifulSoup(raw_html, 'lxml')
-    # print(soup.prettify())
     global players
 
-    player_rows = soup.find_all("tr")
+    for group in raw_html:
+        soup = BeautifulSoup(group, 'lxml')
 
-    for player in player_rows:  # first row is designated by the "th" tag, so no need to skip it here
-        player_data = player.find_all("td")
-        # shohei player id is 39382
-        try:
-            player = ESPNPlayer.from_data(player_data)
+        player_rows = soup.find_all("tr")
+        # first row is designated by the "th" tag, so no need to skip it here
+        for player in player_rows:
+            player_data = player.find_all("td")
+            # shohei player id is 39382
+            player = ESPNPlayer.from_data(player_data, etl_type)
             players.append(player)
-        except IndexError as ie:
-            print(
-                f"Error occurred while processing {player_data[1].get_text(strip=True)}: {espn_id}. \n"
-                f"   No matching player found in the key map")
-            pct_rostered = float(player_data[16].get_text(strip=True))
-            if pct_rostered > 2.0:
-                print(f"   player is rostered {pct_rostered} \
-                      of leagues, update/add player to key map!")
-            continue
 
-    # print(f"Finished building player universe.  {len(players)} players found.")
     # save the player universe to a json file
     write.write_out(players, output_dir, "espn_player_universe", ".json")
 
 
-def stringify_raw_html(temp_dir) -> str:
+def stringify_raw_html(temp_dir, etl_type: ETLType) -> list:
+    """
+    Loads raw HTML files from directory
+    :param temp_dir: where to locate files
+    :param etl_type: PRESZN or REGSZN
+    :return: list of raw htmls
+    """
     if temp_dir is None:
         raise RawHtmlLoadError("raw_html cannot be empty and temp_dir None")
 
-    return read.read_in_as(temp_dir,
-                           'temp_espn_player_universe',
-                           ".html",
-                           IOKitDataTypes.STR)
+    match etl_type:
+        case ETLType.REG_SZN:
+            return [read.read_in_as(temp_dir,
+                                    'temp_espn_player_universe',
+                                    ".html",
+                                    IOKitDataTypes.STR)]
+        case ETLType.PRE_SZN:
+            return [read.read_in_as(temp_dir,
+                                    'temp_espn_bats_universe',
+                                    ".html",
+                                    IOKitDataTypes.STR),
+                    read.read_in_as(temp_dir,
+                                    'temp_espn_arms_universe',
+                                    ".html",
+                                    IOKitDataTypes.STR)
+                    ]
 
 
 class RawHtmlLoadError(Exception):
