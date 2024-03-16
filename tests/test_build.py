@@ -30,9 +30,22 @@ class TestBuild:
             self.raw_html.append(f.read())
 
     def test_build_player_universe_bs4_tag_element(self, temp_dir):
-        raw_html = BeautifulSoup("<tr>", "lxml")
-        assert isinstance(raw_html, Tag)
-        
+        html = ""
+        with open("./tests/fixtures/single_player_row.html", "r") as f:
+            html = f.read()
+
+        html = [BeautifulSoup(html, "lxml")]
+        assert isinstance(html, list)
+
+        build.build_player_universe(etl_type=ETLType.REG_SZN,
+                                    raw_html=html,
+                                    output_dir=temp_dir)
+
+        output_file = os.path.join(temp_dir, "espn_player_universe.json")
+        assert os.path.exists(output_file)
+        with open(output_file) as f:
+            parsed_json = json.load(f)
+            assert len(parsed_json[0]["name"]) > 0
 
     def test_build_player_universe_raw_html_bufferized_reg_szn(self, temp_dir):
         self.setup_reg_szn()
