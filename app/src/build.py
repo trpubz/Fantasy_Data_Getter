@@ -6,7 +6,11 @@ by pubins.taylor
 """
 import os
 import re
+from typing import List
+
 from bs4 import BeautifulSoup
+from mtbl_playerkit import ESPNPlayer
+
 from app.src.mtbl_globals import ETLType, DIR_EXTRACT
 from mtbl_iokit import write, read
 from mtbl_iokit.read import IOKitDataTypes
@@ -44,7 +48,10 @@ def build_player_universe(etl_type: ETLType,
     global players
 
     for group in raw_html:
-        soup = BeautifulSoup(group, 'lxml')
+        if isinstance(group, str):
+            soup = BeautifulSoup(group, 'lxml')
+        else:  # it may be passed in as bs4.element.Tag
+            soup = group
 
         player_rows = soup.find_all("tr")
         # first row is designated by the "th" tag, so no need to skip it here

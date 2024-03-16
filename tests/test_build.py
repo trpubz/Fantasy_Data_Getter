@@ -3,6 +3,7 @@ import tempfile
 import os
 
 import pytest
+from bs4 import BeautifulSoup, Tag
 
 from app.src.mtbl_globals import ETLType
 import app.src.build as build
@@ -10,6 +11,11 @@ import app.src.build as build
 
 class TestBuild:
     raw_html = []
+
+    @pytest.fixture
+    def temp_dir(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            yield temp_dir
 
     def setup_reg_szn(self):
         self.raw_html = []
@@ -23,46 +29,49 @@ class TestBuild:
         with open("./tests/fixtures/temp_espn_arms_universe.html", "r") as f:
             self.raw_html.append(f.read())
 
-    def test_build_player_universe_raw_html_bufferized_reg_szn(self):
+    def test_build_player_universe_bs4_tag_element(self, temp_dir):
+        raw_html = BeautifulSoup("<tr>", "lxml")
+        assert isinstance(raw_html, Tag)
+        
+
+    def test_build_player_universe_raw_html_bufferized_reg_szn(self, temp_dir):
         self.setup_reg_szn()
-        with tempfile.TemporaryDirectory() as temp_dir:
-            build.build_player_universe(etl_type=ETLType.REG_SZN,
-                                        raw_html=self.raw_html,
-                                        output_dir=temp_dir)
 
-            output_file = os.path.join(temp_dir, "espn_player_universe.json")
-            assert os.path.exists(output_file)
-            with open(output_file) as f:
-                parsed_json = json.load(f)
-                assert len(parsed_json[0]["name"]) > 0
+        build.build_player_universe(etl_type=ETLType.REG_SZN,
+                                    raw_html=self.raw_html,
+                                    output_dir=temp_dir)
 
-    def test_build_player_universe_raw_html_bufferized_pre_szn(self):
+        output_file = os.path.join(temp_dir, "espn_player_universe.json")
+        assert os.path.exists(output_file)
+        with open(output_file) as f:
+            parsed_json = json.load(f)
+            assert len(parsed_json[0]["name"]) > 0
+
+    def test_build_player_universe_raw_html_bufferized_pre_szn(self, temp_dir):
         self.setup_pre_szn()
-        with tempfile.TemporaryDirectory() as temp_dir:
-            build.build_player_universe(etl_type=ETLType.PRE_SZN,
-                                        raw_html=self.raw_html,
-                                        output_dir=temp_dir)
 
-            output_file = os.path.join(temp_dir, "espn_player_universe.json")
-            assert os.path.exists(output_file)
-            with open(output_file) as f:
-                parsed_json = json.load(f)
-                assert len(parsed_json[0]["name"]) > 0
+        build.build_player_universe(etl_type=ETLType.PRE_SZN,
+                                    raw_html=self.raw_html,
+                                    output_dir=temp_dir)
 
-        self.raw_html = []
+        output_file = os.path.join(temp_dir, "espn_player_universe.json")
+        assert os.path.exists(output_file)
+        with open(output_file) as f:
+            parsed_json = json.load(f)
+            assert len(parsed_json[0]["name"]) > 0
 
-    def test_build_player_universe_no_raw_html(self):
+
+    def test_build_player_universe_no_raw_html(self, temp_dir):
         # raw_html is "", must find the temp file
-        with tempfile.TemporaryDirectory() as temp_dir:
-            build.build_player_universe(etl_type=ETLType.REG_SZN,
-                                        temp_dir="./tests/fixtures",
-                                        output_dir=temp_dir)
+        build.build_player_universe(etl_type=ETLType.REG_SZN,
+                                    temp_dir="./tests/fixtures",
+                                    output_dir=temp_dir)
 
-            output_file = os.path.join(temp_dir, "espn_player_universe.json")
-            assert os.path.exists(output_file)
-            with open(output_file) as f:
-                parsed_json = json.load(f)
-                assert len(parsed_json[0]["name"]) > 0
+        output_file = os.path.join(temp_dir, "espn_player_universe.json")
+        assert os.path.exists(output_file)
+        with open(output_file) as f:
+            parsed_json = json.load(f)
+            assert len(parsed_json[0]["name"]) > 0
 
     def test_stringify_raw_html(self):
         raw_html = build.stringify_raw_html("./tests/fixtures", ETLType.REG_SZN)
