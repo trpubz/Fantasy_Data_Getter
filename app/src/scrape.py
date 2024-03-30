@@ -1,14 +1,13 @@
 """
 Specifically webscraping and parsing handlers.
 Exclusively the ESPN Fantasy Universe from the league's Player Rater page.
-v 3.0.0
-modified: 15 MAR 2024
+v 3.0.1
+modified: 30 MAR 2024
 by pubins.taylor
 """
 from time import sleep
 import re
 
-from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -140,7 +139,7 @@ class Scraper:
                         if row_pct_rostered is not None:
                             pct_rostered = float(row_pct_rostered.string)
 
-                        if not is_duplicate_row(combined_player_row, table_rows):
+                        if is_unique_row(combined_player_row, table_rows):
                             table_rows.append(str(combined_player_row))
                             combined_table.append(combined_player_row)
                     else:
@@ -222,7 +221,7 @@ class Scraper:
         return initial_state != self.driver.find_element(By.CSS_SELECTOR, "tbody.Table__TBODY").text
 
 
-def is_duplicate_row(row: Tag, table_rows: list[str]) -> bool:
+def is_unique_row(row: Tag, table_rows: list[str]) -> bool:
     """
     Function that checks to see if a row is already in the tableRows list
     :param row: a row of player data
@@ -231,14 +230,13 @@ def is_duplicate_row(row: Tag, table_rows: list[str]) -> bool:
     """
     id_loc: str = row.find("img").get("data-src") or row.find("img").get("src")
     espn_id = re.findall(r'full/(\d+)\.png', id_loc)[0]
-    if str(row) not in table_rows:
-        return False
-    else:
-        # check to make sure Shohei Ohtani is not in the table more than twice
-        shoheis = filter(lambda x: "39382" in x, table_rows)
-        list_shoheis = list(shoheis)
-        if espn_id == "39382" and len(list_shoheis) < 2:
-            return False
-        else:
-            # print("duplicate row found, skipping table")
-            return True
+    return str(row) not in table_rows
+    # else:
+    #     # check to make sure Shohei Ohtani is not in the table more than twice
+    #     shoheis = filter(lambda x: "39382" in x, table_rows)
+    #     list_shoheis = list(shoheis)
+    #     if espn_id == "39382" and len(list_shoheis) < 2:
+    #         return False
+    #     else:
+    #         # print("duplicate row found, skipping table")
+    #         return True

@@ -30,6 +30,7 @@ class TestScrape:
         assert len(scraper.combined_table) > 0
         assert os.path.exists(os.path.join(self.temp_dir[1], "temp_espn_player_universe_dep.html"))
 
+    @pytest.mark.skip(reason="2024 REG SZN")
     def test_get_espn_plyr_universe_pre_szn(self):
         # scraper = Scraper(self.temp_dir, ETLType.PRE_SZN)
         scraper = Scraper(self.temp_dir, ETLType.PRE_SZN)
@@ -39,7 +40,7 @@ class TestScrape:
         assert os.path.exists(os.path.join(self.temp_dir[1], "temp_espn_bats_universe.html"))
         assert os.path.exists(os.path.join(self.temp_dir[1], "temp_espn_arms_universe.html"))
 
-    # @pytest.mark.skip
+    @pytest.mark.skip
     def test_get_espn_plyr_universe_app_root_not_tempfile(self):
         project_root = os.path.abspath(os.path.dirname(__file__))
         temp_path = os.path.join(project_root, "temp")

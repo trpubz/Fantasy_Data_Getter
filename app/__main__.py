@@ -79,7 +79,7 @@ if __name__ == '__main__':
         type=ETLType.from_string,
         choices=list(ETLType),
         help="ETL Type; PRE_SZN or REG_SZN",
-        default=ETLType.PRE_SZN)
+        default=ETLType.REG_SZN)
 
     args = parser.parse_args()
     main(args.lgID, args.etl_type)

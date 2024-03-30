@@ -9,6 +9,7 @@ from app.src.mtbl_globals import ETLType
 import app.src.build as build
 
 
+# noinspection DuplicatedCode
 class TestBuild:
     raw_html = []
 
@@ -72,7 +73,6 @@ class TestBuild:
         with open(output_file) as f:
             parsed_json = json.load(f)
             assert len(parsed_json[0]["name"]) > 0
-
 
     def test_build_player_universe_no_raw_html(self, temp_dir):
         # raw_html is "", must find the temp file

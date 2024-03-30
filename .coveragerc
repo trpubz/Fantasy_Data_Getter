@@ -2,3 +2,8 @@
 omit =
     tests/*
     *globals.py
+    setup.py
+
+[record]
+exclude_lines =
+    if __name__ == "__main__":
