@@ -9,8 +9,8 @@ import re
 from typing import List
 
 from bs4 import BeautifulSoup
-from mtbl_playerkit import ESPNPlayer
 
+from mtbl_playerkit import ESPNPlayer
 from app.src.mtbl_globals import ETLType, DIR_EXTRACT
 from mtbl_iokit import write, read
 from mtbl_iokit.read import IOKitDataTypes
